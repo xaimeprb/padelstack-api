@@ -1,0 +1,11 @@
+.git
+.idea
+target
+build
+*.log
+.env
+serviceAccountKey.json
+firebase-service-account.json
+firebase-adminsdk.json
+*.pem
+*.key
