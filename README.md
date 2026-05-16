@@ -150,9 +150,3 @@ Además de los obligatorios, se deja preparado:
 
 - `PUT /api/v1/admin/incidents/{incidentId}/status`
 - `GET /api/v1/public/incidents/{incidentId}/photo?path=...`
-
-## Limitaciones honestas
-
-- No incluye migraciones automáticas ni seed runner.
-- No he metido Swagger porque ahora mismo no te aporta más que peso.
-- Las fotos se sirven a través del backend para que `photoUrl` sea usable desde Android sin abrir reglas cliente.
