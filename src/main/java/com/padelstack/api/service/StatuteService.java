@@ -11,6 +11,9 @@ import com.padelstack.api.repository.StatuteRepository;
 import com.padelstack.api.util.TimeUtils;
 import org.springframework.stereotype.Service;
 
+/**
+ * Servicio encargado de la lógica relacionada con statute.
+ */
 @Service
 public class StatuteService {
 
@@ -18,6 +21,13 @@ public class StatuteService {
     private final SecurityService securityService;
     private final AuditLogService auditLogService;
 
+    /**
+     * Crea una instancia de StatuteService con las dependencias necesarias.
+     *
+     * @param statuteRepository repositorio usado por la clase.
+     * @param securityService servicio usado por la clase.
+     * @param auditLogService servicio usado por la clase.
+     */
     public StatuteService(StatuteRepository statuteRepository,
                           SecurityService securityService,
                           AuditLogService auditLogService) {
@@ -26,6 +36,12 @@ public class StatuteService {
         this.auditLogService = auditLogService;
     }
 
+    /**
+     * Obtiene la normativa visible para el usuario actual.
+     *
+     * @param currentUser usuario que realiza la operación.
+     * @return resultado de la operación.
+     */
     public StatuteResponse currentForUser(UserDocument currentUser) {
         StatuteDocument document = statuteRepository.findById(currentUser.communityId)
                 .orElseThrow(() -> new NotFoundException("Estatutos no encontrados"));
@@ -33,6 +49,14 @@ public class StatuteService {
         return toResponse(document);
     }
 
+    /**
+     * Guarda o actualiza el documento indicado.
+     *
+     * @param currentUser usuario que realiza la operación.
+     * @param communityId identificador de la comunidad.
+     * @param request datos recibidos en la petición.
+     * @return resultado de la operación.
+     */
     public StatuteResponse upsert(UserDocument currentUser, String communityId, AdminStatuteUpsertRequest request) {
         securityService.requireAdmin(currentUser);
 
@@ -54,6 +78,12 @@ public class StatuteService {
         return toResponse(document);
     }
 
+    /**
+     * Convierte un modelo interno en un DTO de respuesta.
+     *
+     * @param document valor recibido por el método.
+     * @return resultado de la operación.
+     */
     private StatuteResponse toResponse(StatuteDocument document) {
         return new StatuteResponse(
                 document.communityId,

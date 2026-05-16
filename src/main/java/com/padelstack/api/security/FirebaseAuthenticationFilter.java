@@ -18,6 +18,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Filtro de seguridad que lee el token de Firebase y prepara la autenticación de Spring.
+ */
 @Component
 public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
 
@@ -25,6 +28,12 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
     private static final String PREFIX = "Bearer ";
     private final AntPathMatcher antPathMatcher = new AntPathMatcher();
 
+    /**
+     * Indica si una petición debe saltarse el filtro de autenticación.
+     *
+     * @param request datos recibidos en la petición.
+     * @return true si se cumple la condición, false en caso contrario.
+     */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
@@ -32,6 +41,13 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
                 || antPathMatcher.match("/actuator/health", path);
     }
 
+    /**
+     * Procesa la petición HTTP y añade la autenticación si el token es válido.
+     *
+     * @param request datos recibidos en la petición.
+     * @param response valor recibido por el método.
+     * @param filterChain valor recibido por el método.
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,

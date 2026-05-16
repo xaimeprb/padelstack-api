@@ -2,6 +2,9 @@ package com.padelstack.api.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+/**
+ * Clase de propiedades que recoge la configuración de app.
+ */
 @ConfigurationProperties(prefix = "app")
 public class AppProperties {
 
@@ -16,18 +19,38 @@ public class AppProperties {
      */
     private String incidentPhotosFolder = "incident-photos";
 
+    /**
+     * Devuelve public base url.
+     *
+     * @return texto obtenido por el método.
+     */
     public String getPublicBaseUrl() {
         return publicBaseUrl;
     }
 
+    /**
+     * Actualiza public base url.
+     *
+     * @param publicBaseUrl valor recibido por el método.
+     */
     public void setPublicBaseUrl(String publicBaseUrl) {
         this.publicBaseUrl = publicBaseUrl;
     }
 
+    /**
+     * Devuelve incident photos folder.
+     *
+     * @return texto obtenido por el método.
+     */
     public String getIncidentPhotosFolder() {
         return incidentPhotosFolder;
     }
 
+    /**
+     * Actualiza incident photos folder.
+     *
+     * @param incidentPhotosFolder valor recibido por el método.
+     */
     public void setIncidentPhotosFolder(String incidentPhotosFolder) {
         this.incidentPhotosFolder = incidentPhotosFolder;
     }

@@ -13,17 +13,32 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
+/**
+ * Servicio encargado de la lógica relacionada con user.
+ */
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
     private final CommunityService communityService;
 
+    /**
+     * Crea una instancia de UserService con las dependencias necesarias.
+     *
+     * @param userRepository repositorio usado por la clase.
+     * @param communityService servicio usado por la clase.
+     */
     public UserService(UserRepository userRepository, CommunityService communityService) {
         this.userRepository = userRepository;
         this.communityService = communityService;
     }
 
+    /**
+     * Crea o actualiza el usuario inicial en la comunidad correspondiente.
+     *
+     * @param authUser usuario autenticado obtenido desde Firebase.
+     * @param request datos recibidos en la petición.
+     */
     public void bootstrap(AuthenticatedUser authUser, BootstrapUserRequest request) {
         CommunityDocument community = communityService.getRequiredCommunity(request.communityId());
         communityService.validateUnitBelongsToCommunity(community, request.unitDisplay());
@@ -52,11 +67,23 @@ public class UserService {
         userRepository.upsert(document);
     }
 
+    /**
+     * Obtiene un usuario obligatorio o lanza una excepción si no existe.
+     *
+     * @param uid identificador del usuario.
+     * @return resultado de la operación.
+     */
     public UserDocument getRequiredUser(String uid) {
         return userRepository.findById(uid)
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
     }
 
+    /**
+     * Construye la respuesta con los datos del usuario actual.
+     *
+     * @param uid identificador del usuario.
+     * @return resultado de la operación.
+     */
     public MeResponse me(String uid) {
         UserDocument user = getRequiredUser(uid);
         return new MeResponse(

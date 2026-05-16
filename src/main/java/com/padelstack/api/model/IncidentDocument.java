@@ -1,5 +1,8 @@
 package com.padelstack.api.model;
 
+/**
+ * Modelo que representa el documento de incident guardado en Firestore.
+ */
 public class IncidentDocument {
     public String incidentId;
     public String communityId;
@@ -15,6 +18,9 @@ public class IncidentDocument {
     public String updatedAt;
     public String updatedByUid;
 
+    /**
+     * Crea una instancia de IncidentDocument.
+     */
     public IncidentDocument() {
     }
 }

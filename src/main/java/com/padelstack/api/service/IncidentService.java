@@ -17,6 +17,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Servicio encargado de la lógica relacionada con incident.
+ */
 @Service
 public class IncidentService {
 
@@ -25,6 +28,14 @@ public class IncidentService {
     private final PhotoStorageService photoStorageService;
     private final AuditLogService auditLogService;
 
+    /**
+     * Crea una instancia de IncidentService con las dependencias necesarias.
+     *
+     * @param incidentRepository repositorio usado por la clase.
+     * @param securityService servicio usado por la clase.
+     * @param photoStorageService servicio usado por la clase.
+     * @param auditLogService servicio usado por la clase.
+     */
     public IncidentService(IncidentRepository incidentRepository,
                            SecurityService securityService,
                            PhotoStorageService photoStorageService,
@@ -35,12 +46,24 @@ public class IncidentService {
         this.auditLogService = auditLogService;
     }
 
+    /**
+     * Gestiona la operación mine.
+     *
+     * @param currentUser usuario que realiza la operación.
+     * @return lista de elementos obtenida.
+     */
     public List<IncidentResponse> mine(UserDocument currentUser) {
         return incidentRepository.findMine(currentUser.communityId, currentUser.uid).stream()
                 .map(this::toResponse)
                 .toList();
     }
 
+    /**
+     * Gestiona la operación all.
+     *
+     * @param currentUser usuario que realiza la operación.
+     * @return lista de elementos obtenida.
+     */
     public List<IncidentResponse> all(UserDocument currentUser) {
         securityService.requireAdmin(currentUser);
         return incidentRepository.findAllByCommunity(currentUser.communityId).stream()
@@ -48,6 +71,15 @@ public class IncidentService {
                 .toList();
     }
 
+    /**
+     * Crea un nuevo registro usando los datos recibidos.
+     *
+     * @param currentUser usuario que realiza la operación.
+     * @param title título usado en la operación.
+     * @param description descripción usada en la operación.
+     * @param photo foto asociada a la incidencia.
+     * @return resultado de la operación.
+     */
     public CreateIncidentResponse create(UserDocument currentUser,
                                          String title,
                                          String description,
@@ -84,6 +116,12 @@ public class IncidentService {
         return new CreateIncidentResponse(incidentId, incident.status);
     }
 
+    /**
+     * Elimina o cancela el registro solicitado si el usuario tiene permisos.
+     *
+     * @param currentUser usuario que realiza la operación.
+     * @param incidentId identificador de la incidencia.
+     */
     public void delete(UserDocument currentUser, String incidentId) {
         IncidentDocument incident = getRequiredIncident(currentUser.communityId, incidentId);
         boolean owner = currentUser.uid.equals(incident.createdByUid);
@@ -96,6 +134,13 @@ public class IncidentService {
                 java.util.Map.of("title", incident.title));
     }
 
+    /**
+     * Devuelve required incident.
+     *
+     * @param communityId identificador de la comunidad.
+     * @param incidentId identificador de la incidencia.
+     * @return resultado de la operación.
+     */
     public IncidentDocument getRequiredIncident(String communityId, String incidentId) {
         IncidentDocument incident = incidentRepository.findById(incidentId)
                 .orElseThrow(() -> new NotFoundException("Incidencia no encontrada"));
@@ -105,6 +150,13 @@ public class IncidentService {
         return incident;
     }
 
+    /**
+     * Gestiona la operación updateStatus.
+     *
+     * @param currentUser usuario que realiza la operación.
+     * @param incidentId identificador de la incidencia.
+     * @param request datos recibidos en la petición.
+     */
     public void updateStatus(UserDocument currentUser, String incidentId, AdminIncidentStatusUpdateRequest request) {
         securityService.requireAdmin(currentUser);
         IncidentDocument incident = getRequiredIncident(currentUser.communityId, incidentId);
@@ -119,14 +171,34 @@ public class IncidentService {
                 java.util.Map.of("status", request.status()));
     }
 
+    /**
+     * Gestiona la operación photoBytes.
+     *
+     * @param incidentId identificador de la incidencia.
+     * @param storagePath valor recibido por el método.
+     * @return resultado de la operación.
+     */
     public byte[] photoBytes(String incidentId, String storagePath) {
         return photoStorageService.load(storagePath);
     }
 
+    /**
+     * Gestiona la operación photoContentType.
+     *
+     * @param incidentId identificador de la incidencia.
+     * @param storagePath valor recibido por el método.
+     * @return texto obtenido por el método.
+     */
     public String photoContentType(String incidentId, String storagePath) {
         return photoStorageService.contentType(storagePath);
     }
 
+    /**
+     * Convierte un modelo interno en un DTO de respuesta.
+     *
+     * @param incident valor recibido por el método.
+     * @return resultado de la operación.
+     */
     private IncidentResponse toResponse(IncidentDocument incident) {
         return new IncidentResponse(
                 incident.incidentId,

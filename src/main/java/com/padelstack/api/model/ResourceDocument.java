@@ -1,5 +1,8 @@
 package com.padelstack.api.model;
 
+/**
+ * Modelo que representa el documento de resource guardado en Firestore.
+ */
 public class ResourceDocument {
     public String resourceId;
     public String communityId;
@@ -12,6 +15,9 @@ public class ResourceDocument {
     public String rulesText;
     public Boolean active = true;
 
+    /**
+     * Crea una instancia de ResourceDocument.
+     */
     public ResourceDocument() {
     }
 }

@@ -10,9 +10,17 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.List;
 
+/**
+ * Clase de configuración de web.
+ */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
+    /**
+     * Configura los permisos CORS de la API.
+     *
+     * @param registry valor recibido por el método.
+     */
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
@@ -21,11 +29,21 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedHeaders("*");
     }
 
+    /**
+     * Configura la negociación de contenido de las respuestas.
+     *
+     * @param configurer valor recibido por el método.
+     */
     @Override
     public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
         configurer.defaultContentType(MediaType.APPLICATION_JSON);
     }
 
+    /**
+     * Ajusta los conversores HTTP usados por Spring.
+     *
+     * @param converters valor recibido por el método.
+     */
     @Override
     public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
         converters.removeIf(MappingJackson2XmlHttpMessageConverter.class::isInstance);

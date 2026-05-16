@@ -15,17 +15,32 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Servicio encargado de la lógica relacionada con resource.
+ */
 @Service
 public class ResourceService {
 
     private final ResourceRepository resourceRepository;
     private final ReservationService reservationService;
 
+    /**
+     * Crea una instancia de ResourceService con las dependencias necesarias.
+     *
+     * @param resourceRepository repositorio usado por la clase.
+     * @param reservationService servicio usado por la clase.
+     */
     public ResourceService(ResourceRepository resourceRepository, ReservationService reservationService) {
         this.resourceRepository = resourceRepository;
         this.reservationService = reservationService;
     }
 
+    /**
+     * Obtiene los recursos disponibles para el usuario actual.
+     *
+     * @param currentUser usuario que realiza la operación.
+     * @return lista de elementos obtenida.
+     */
     public List<ResourceResponse> listResources(UserDocument currentUser) {
         return resourceRepository.findActiveByCommunity(currentUser.communityId).stream()
                 .map(resource -> new ResourceResponse(
@@ -41,6 +56,13 @@ public class ResourceService {
                 .toList();
     }
 
+    /**
+     * Obtiene un recurso obligatorio dentro de una comunidad.
+     *
+     * @param resourceId identificador del recurso.
+     * @param communityId identificador de la comunidad.
+     * @return resultado de la operación.
+     */
     public ResourceDocument getRequiredResourceForCommunity(String resourceId, String communityId) {
         ResourceDocument resource = resourceRepository.findById(resourceId)
                 .orElseThrow(() -> new NotFoundException("Recurso no encontrado"));
@@ -50,6 +72,14 @@ public class ResourceService {
         return resource;
     }
 
+    /**
+     * Calcula la disponibilidad de un recurso en una fecha.
+     *
+     * @param currentUser usuario que realiza la operación.
+     * @param resourceId identificador del recurso.
+     * @param date fecha usada en la operación.
+     * @return resultado de la operación.
+     */
     public AvailabilityResponse availability(UserDocument currentUser, String resourceId, String date) {
         TimeUtils.parseDate(date);
         ResourceDocument resource = getRequiredResourceForCommunity(resourceId, currentUser.communityId);
@@ -91,6 +121,14 @@ public class ResourceService {
         return new AvailabilityResponse(resource.resourceId, date, mode.name(), slots, null);
     }
 
+    /**
+     * Construye slots.
+     *
+     * @param currentUser usuario que realiza la operación.
+     * @param resource valor recibido por el método.
+     * @param activeReservations valor recibido por el método.
+     * @return lista de elementos obtenida.
+     */
     private List<AvailabilitySlotResponse> buildSlots(UserDocument currentUser,
                                                       ResourceDocument resource,
                                                       List<ReservationDocument> activeReservations) {

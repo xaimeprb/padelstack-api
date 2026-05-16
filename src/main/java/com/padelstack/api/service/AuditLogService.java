@@ -9,15 +9,32 @@ import org.springframework.stereotype.Service;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Servicio encargado de la lógica relacionada con audit log.
+ */
 @Service
 public class AuditLogService {
 
     private final AuditLogRepository auditLogRepository;
 
+    /**
+     * Crea una instancia de AuditLogService con las dependencias necesarias.
+     *
+     * @param auditLogRepository repositorio usado por la clase.
+     */
     public AuditLogService(AuditLogRepository auditLogRepository) {
         this.auditLogRepository = auditLogRepository;
     }
 
+    /**
+     * Guarda una acción en el registro de auditoría.
+     *
+     * @param action valor recibido por el método.
+     * @param entityType valor recibido por el método.
+     * @param entityId valor recibido por el método.
+     * @param actor valor recibido por el método.
+     * @param details valor recibido por el método.
+     */
     public void log(String action,
                     String entityType,
                     String entityId,

@@ -15,9 +15,20 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import java.util.Map;
 
+/**
+ * Clase de configuración de security.
+ */
 @Configuration
 public class SecurityConfig {
 
+    /**
+     * Configura la cadena de filtros de seguridad de Spring.
+     *
+     * @param http valor recibido por el método.
+     * @param firebaseAuthenticationFilter valor recibido por el método.
+     * @param objectMapper valor recibido por el método.
+     * @return resultado de la operación.
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    FirebaseAuthenticationFilter firebaseAuthenticationFilter,

@@ -1,5 +1,8 @@
 package com.padelstack.api.model;
 
+/**
+ * Modelo que representa el documento de reservation guardado en Firestore.
+ */
 public class ReservationDocument {
     public String reservationId;
     public String communityId;
@@ -18,6 +21,9 @@ public class ReservationDocument {
     public String updatedAt;
     public String cancelledAt;
 
+    /**
+     * Crea una instancia de ReservationDocument.
+     */
     public ReservationDocument() {
     }
 }

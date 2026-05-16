@@ -1,5 +1,8 @@
 package com.padelstack.api.model;
 
+/**
+ * Modelo que representa el documento de user guardado en Firestore.
+ */
 public class UserDocument {
     public String uid;
     public String email;
@@ -16,6 +19,9 @@ public class UserDocument {
     public String createdAt;
     public String updatedAt;
 
+    /**
+     * Crea una instancia de UserDocument.
+     */
     public UserDocument() {
     }
 }

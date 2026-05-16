@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Controlador REST encargado de atender peticiones relacionadas con reservation.
+ */
 @RestController
 @RequestMapping("/api/v1/reservations")
 public class ReservationController {
@@ -20,11 +23,24 @@ public class ReservationController {
     private final ReservationService reservationService;
     private final SecurityService securityService;
 
+    /**
+     * Crea una instancia de ReservationController con las dependencias necesarias.
+     *
+     * @param reservationService servicio usado por la clase.
+     * @param securityService servicio usado por la clase.
+     */
     public ReservationController(ReservationService reservationService, SecurityService securityService) {
         this.reservationService = reservationService;
         this.securityService = securityService;
     }
 
+    /**
+     * Obtiene las reservas del usuario actual filtradas por estado.
+     *
+     * @param status estado usado para filtrar o actualizar datos.
+     * @param authentication información de autenticación del usuario.
+     * @return lista de elementos obtenida.
+     */
     @GetMapping("/me")
     public List<ReservationSummaryResponse> myReservations(@RequestParam(defaultValue = "ACTIVE") String status,
                                                            Authentication authentication) {
@@ -32,6 +48,13 @@ public class ReservationController {
         return reservationService.myReservations(currentUser, status);
     }
 
+    /**
+     * Crea un nuevo registro usando los datos recibidos.
+     *
+     * @param request datos recibidos en la petición.
+     * @param authentication información de autenticación del usuario.
+     * @return resultado de la operación.
+     */
     @PostMapping
     public CreateReservationResponse create(@Valid @RequestBody CreateReservationRequest request,
                                             Authentication authentication) {
@@ -39,6 +62,13 @@ public class ReservationController {
         return reservationService.create(currentUser, request);
     }
 
+    /**
+     * Elimina o cancela el registro solicitado si el usuario tiene permisos.
+     *
+     * @param reservationId identificador de la reserva.
+     * @param authentication información de autenticación del usuario.
+     * @return resultado de la operación.
+     */
     @DeleteMapping("/{reservationId}")
     public DeleteResponse delete(@PathVariable String reservationId,
                                  Authentication authentication) {

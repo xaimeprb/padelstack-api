@@ -13,17 +13,33 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.UUID;
 
+/**
+ * Servicio encargado de la lógica relacionada con photo storage.
+ */
 @Service
 public class PhotoStorageService {
 
     private final StorageClient storageClient;
     private final AppProperties appProperties;
 
+    /**
+     * Crea una instancia de PhotoStorageService con las dependencias necesarias.
+     *
+     * @param storageClient valor recibido por el método.
+     * @param appProperties valor recibido por el método.
+     */
     public PhotoStorageService(StorageClient storageClient, AppProperties appProperties) {
         this.storageClient = storageClient;
         this.appProperties = appProperties;
     }
 
+    /**
+     * Gestiona la operación saveIncidentPhoto.
+     *
+     * @param incidentId identificador de la incidencia.
+     * @param file valor recibido por el método.
+     * @return resultado de la operación.
+     */
     public StoredPhoto saveIncidentPhoto(String incidentId, MultipartFile file) {
         if (file == null || file.isEmpty()) {
             return null;
@@ -47,6 +63,12 @@ public class PhotoStorageService {
         }
     }
 
+    /**
+     * Carga .
+     *
+     * @param path ruta del recurso solicitado.
+     * @return resultado de la operación.
+     */
     public byte[] load(String path) {
         Bucket bucket = storageClient.bucket();
         Blob blob = bucket.get(path);
@@ -56,6 +78,12 @@ public class PhotoStorageService {
         return blob.getContent();
     }
 
+    /**
+     * Gestiona la operación contentType.
+     *
+     * @param path ruta del recurso solicitado.
+     * @return texto obtenido por el método.
+     */
     public String contentType(String path) {
         Bucket bucket = storageClient.bucket();
         Blob blob = bucket.get(path);
@@ -65,6 +93,12 @@ public class PhotoStorageService {
         return StringUtils.hasText(blob.getContentType()) ? blob.getContentType() : "application/octet-stream";
     }
 
+    /**
+     * Gestiona la operación extractExtension.
+     *
+     * @param originalName valor recibido por el método.
+     * @return texto obtenido por el método.
+     */
     private String extractExtension(String originalName) {
         if (!StringUtils.hasText(originalName) || !originalName.contains(".")) {
             return ".bin";
@@ -72,6 +106,13 @@ public class PhotoStorageService {
         return originalName.substring(originalName.lastIndexOf('.'));
     }
 
+    /**
+     * DTO que transporta los datos de stored photo.
+     *
+     * @param storagePath valor recibido por el método.
+     * @param photoUrl valor recibido por el método.
+     * @param contentType valor recibido por el método.
+     */
     public record StoredPhoto(String storagePath, String photoUrl, String contentType) {
     }
 }

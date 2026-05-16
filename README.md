@@ -58,6 +58,16 @@ mvn clean package
 java -jar target/padelstack-api-1.0.0.jar
 ```
 
+En Windows, desde `Codigo/padelstack-api`, puedes arrancarla con las
+variables locales ya preparadas:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start-local-api.ps1 -Build
+```
+
+La API quedara en `http://localhost:8080`. Desde el emulador Android se
+accede como `http://10.0.2.2:8080`.
+
 ## Colecciones Firestore esperadas
 
 - `communities/{communityId}`

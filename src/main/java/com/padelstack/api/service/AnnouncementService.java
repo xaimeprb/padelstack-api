@@ -13,6 +13,9 @@ import org.springframework.util.StringUtils;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Servicio encargado de la lógica relacionada con announcement.
+ */
 @Service
 public class AnnouncementService {
 
@@ -20,6 +23,13 @@ public class AnnouncementService {
     private final SecurityService securityService;
     private final AuditLogService auditLogService;
 
+    /**
+     * Crea una instancia de AnnouncementService con las dependencias necesarias.
+     *
+     * @param announcementRepository repositorio usado por la clase.
+     * @param securityService servicio usado por la clase.
+     * @param auditLogService servicio usado por la clase.
+     */
     public AnnouncementService(AnnouncementRepository announcementRepository,
                                SecurityService securityService,
                                AuditLogService auditLogService) {
@@ -28,12 +38,25 @@ public class AnnouncementService {
         this.auditLogService = auditLogService;
     }
 
+    /**
+     * Gestiona la operación visible.
+     *
+     * @param currentUser usuario que realiza la operación.
+     * @return lista de elementos obtenida.
+     */
     public List<AnnouncementResponse> visible(UserDocument currentUser) {
         return announcementRepository.findVisibleByCommunity(currentUser.communityId).stream()
                 .map(this::toResponse)
                 .toList();
     }
 
+    /**
+     * Crea un nuevo registro usando los datos recibidos.
+     *
+     * @param currentUser usuario que realiza la operación.
+     * @param request datos recibidos en la petición.
+     * @return resultado de la operación.
+     */
     public AnnouncementResponse create(UserDocument currentUser, AdminAnnouncementUpsertRequest request) {
         securityService.requireAdmin(currentUser);
         String announcementId = UUID.randomUUID().toString().replace("-", "");
@@ -56,6 +79,14 @@ public class AnnouncementService {
         return toResponse(document);
     }
 
+    /**
+     * Gestiona la operación update.
+     *
+     * @param currentUser usuario que realiza la operación.
+     * @param announcementId valor recibido por el método.
+     * @param request datos recibidos en la petición.
+     * @return resultado de la operación.
+     */
     public AnnouncementResponse update(UserDocument currentUser, String announcementId, AdminAnnouncementUpsertRequest request) {
         securityService.requireAdmin(currentUser);
         AnnouncementDocument document = announcementRepository.findById(announcementId)
@@ -75,6 +106,13 @@ public class AnnouncementService {
         return toResponse(document);
     }
 
+    /**
+     * Gestiona la operación resolveTargetCommunity.
+     *
+     * @param currentUser usuario que realiza la operación.
+     * @param requestedCommunityId valor recibido por el método.
+     * @return texto obtenido por el método.
+     */
     private String resolveTargetCommunity(UserDocument currentUser, String requestedCommunityId) {
         if (Role.SUPERADMIN.name().equals(currentUser.role) && StringUtils.hasText(requestedCommunityId)) {
             return requestedCommunityId;
@@ -82,12 +120,24 @@ public class AnnouncementService {
         return currentUser.communityId;
     }
 
+    /**
+     * Gestiona la operación checkScope.
+     *
+     * @param currentUser usuario que realiza la operación.
+     * @param targetCommunityId valor recibido por el método.
+     */
     private void checkScope(UserDocument currentUser, String targetCommunityId) {
         if (!Role.SUPERADMIN.name().equals(currentUser.role) && !currentUser.communityId.equals(targetCommunityId)) {
             throw new com.padelstack.api.exception.ForbiddenException("No tienes permisos");
         }
     }
 
+    /**
+     * Convierte un modelo interno en un DTO de respuesta.
+     *
+     * @param document valor recibido por el método.
+     * @return resultado de la operación.
+     */
     private AnnouncementResponse toResponse(AnnouncementDocument document) {
         return new AnnouncementResponse(
                 document.announcementId,

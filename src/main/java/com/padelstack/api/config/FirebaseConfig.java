@@ -14,9 +14,18 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * Clase de configuración de firebase.
+ */
 @Configuration
 public class FirebaseConfig {
 
+    /**
+     * Configura e inicializa la aplicación de Firebase.
+     *
+     * @param properties valor recibido por el método.
+     * @return resultado de la operación.
+     */
     @Bean
     public FirebaseApp firebaseApp(FirebaseProperties properties) throws IOException {
         if (!FirebaseApp.getApps().isEmpty()) {
@@ -45,11 +54,23 @@ public class FirebaseConfig {
         return FirebaseApp.initializeApp(builder.build());
     }
 
+    /**
+     * Obtiene la instancia de Firestore asociada a Firebase.
+     *
+     * @param firebaseApp valor recibido por el método.
+     * @return resultado de la operación.
+     */
     @Bean
     public Firestore firestore(FirebaseApp firebaseApp) {
         return FirestoreClient.getFirestore(firebaseApp);
     }
 
+    /**
+     * Obtiene el cliente de Storage asociado a Firebase.
+     *
+     * @param firebaseApp valor recibido por el método.
+     * @return resultado de la operación.
+     */
     @Bean
     public StorageClient storageClient(FirebaseApp firebaseApp) {
         return StorageClient.getInstance(firebaseApp);
