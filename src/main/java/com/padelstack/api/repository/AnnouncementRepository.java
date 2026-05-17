@@ -1,13 +1,14 @@
 package com.padelstack.api.repository;
 
 import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.Query;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.padelstack.api.model.AnnouncementDocument;
 import com.padelstack.api.util.FirestoreSupport;
 import org.springframework.stereotype.Repository;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Repositorio encargado de acceder a los datos de announcement.
@@ -43,12 +44,26 @@ public class AnnouncementRepository extends BaseFirestoreRepository<Announcement
     public List<AnnouncementDocument> findVisibleByCommunity(String communityId) {
         QuerySnapshot snapshot = FirestoreSupport.await(collection()
                 .whereEqualTo("communityId", communityId)
-                .whereEqualTo("visible", true)
-                .orderBy("publishedAt", Query.Direction.DESCENDING)
                 .get());
         return snapshot.getDocuments().stream()
                 .map(doc -> doc.toObject(AnnouncementDocument.class))
+                .filter(Objects::nonNull)
+                .filter(document -> Boolean.TRUE.equals(document.visible))
+                .sorted(Comparator.comparing(
+                        document -> safeDate(document.publishedAt),
+                        Comparator.reverseOrder()
+                ))
                 .toList();
+    }
+
+    /**
+     * Devuelve una fecha segura para ordenar aunque falte el campo.
+     *
+     * @param value fecha recibida desde Firestore.
+     * @return texto usado para ordenar.
+     */
+    private String safeDate(String value) {
+        return value == null ? "" : value;
     }
 
     /**

@@ -2,6 +2,9 @@ package com.padelstack.api.service;
 
 import com.padelstack.api.dto.AdminAnnouncementUpsertRequest;
 import com.padelstack.api.dto.AnnouncementResponse;
+import com.padelstack.api.exception.BadRequestException;
+import com.padelstack.api.exception.ForbiddenException;
+import com.padelstack.api.exception.NotFoundException;
 import com.padelstack.api.model.AnnouncementDocument;
 import com.padelstack.api.model.Role;
 import com.padelstack.api.model.UserDocument;
@@ -45,6 +48,7 @@ public class AnnouncementService {
      * @return lista de elementos obtenida.
      */
     public List<AnnouncementResponse> visible(UserDocument currentUser) {
+        requireCommunity(currentUser.communityId);
         return announcementRepository.findVisibleByCommunity(currentUser.communityId).stream()
                 .map(this::toResponse)
                 .toList();
@@ -59,6 +63,7 @@ public class AnnouncementService {
      */
     public AnnouncementResponse create(UserDocument currentUser, AdminAnnouncementUpsertRequest request) {
         securityService.requireAdmin(currentUser);
+        requireCommunity(resolveTargetCommunity(currentUser, request.communityId()));
         String announcementId = UUID.randomUUID().toString().replace("-", "");
         String now = TimeUtils.nowIsoUtc();
 
@@ -90,7 +95,7 @@ public class AnnouncementService {
     public AnnouncementResponse update(UserDocument currentUser, String announcementId, AdminAnnouncementUpsertRequest request) {
         securityService.requireAdmin(currentUser);
         AnnouncementDocument document = announcementRepository.findById(announcementId)
-                .orElseThrow(() -> new com.padelstack.api.exception.NotFoundException("Anuncio no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Anuncio no encontrado"));
 
         checkScope(currentUser, document.communityId);
 
@@ -115,7 +120,7 @@ public class AnnouncementService {
     public void delete(UserDocument currentUser, String announcementId) {
         securityService.requireAdmin(currentUser);
         AnnouncementDocument document = announcementRepository.findById(announcementId)
-                .orElseThrow(() -> new com.padelstack.api.exception.NotFoundException("Anuncio no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Anuncio no encontrado"));
 
         checkScope(currentUser, document.communityId);
 
@@ -148,8 +153,25 @@ public class AnnouncementService {
      * @param targetCommunityId valor recibido por el método.
      */
     private void checkScope(UserDocument currentUser, String targetCommunityId) {
+        if (!StringUtils.hasText(targetCommunityId)) {
+            throw new NotFoundException("Anuncio no encontrado");
+        }
+        if (!Role.SUPERADMIN.name().equals(currentUser.role)) {
+            requireCommunity(currentUser.communityId);
+        }
         if (!Role.SUPERADMIN.name().equals(currentUser.role) && !currentUser.communityId.equals(targetCommunityId)) {
-            throw new com.padelstack.api.exception.ForbiddenException("No tienes permisos");
+            throw new ForbiddenException("No tienes permisos");
+        }
+    }
+
+    /**
+     * Comprueba que exista comunidad para operar con anuncios.
+     *
+     * @param communityId identificador de la comunidad.
+     */
+    private void requireCommunity(String communityId) {
+        if (!StringUtils.hasText(communityId)) {
+            throw new BadRequestException("Perfil de usuario incompleto");
         }
     }
 
