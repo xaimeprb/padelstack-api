@@ -1,13 +1,14 @@
 package com.padelstack.api.repository;
 
 import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.Query;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.padelstack.api.model.IncidentDocument;
 import com.padelstack.api.util.FirestoreSupport;
 import org.springframework.stereotype.Repository;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Repositorio encargado de acceder a los datos de incident.
@@ -44,11 +45,9 @@ public class IncidentRepository extends BaseFirestoreRepository<IncidentDocument
     public List<IncidentDocument> findMine(String communityId, String createdByUid) {
         QuerySnapshot snapshot = FirestoreSupport.await(collection()
                 .whereEqualTo("communityId", communityId)
-                .whereEqualTo("createdByUid", createdByUid)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get());
-        return snapshot.getDocuments().stream()
-                .map(doc -> doc.toObject(IncidentDocument.class))
+        return mapAndSort(snapshot).stream()
+                .filter(incident -> createdByUid.equals(incident.createdByUid))
                 .toList();
     }
 
@@ -61,11 +60,45 @@ public class IncidentRepository extends BaseFirestoreRepository<IncidentDocument
     public List<IncidentDocument> findAllByCommunity(String communityId) {
         QuerySnapshot snapshot = FirestoreSupport.await(collection()
                 .whereEqualTo("communityId", communityId)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get());
+        return mapAndSort(snapshot);
+    }
+
+    /**
+     * Obtiene todas las incidencias sin depender de indices compuestos.
+     *
+     * @return lista de elementos obtenida.
+     */
+    public List<IncidentDocument> findAll() {
+        QuerySnapshot snapshot = FirestoreSupport.await(collection().get());
+        return mapAndSort(snapshot);
+    }
+
+    /**
+     * Convierte los documentos de Firestore y los ordena por fecha en memoria.
+     *
+     * @param snapshot resultado devuelto por Firestore.
+     * @return lista de incidencias ordenada.
+     */
+    private List<IncidentDocument> mapAndSort(QuerySnapshot snapshot) {
         return snapshot.getDocuments().stream()
                 .map(doc -> doc.toObject(IncidentDocument.class))
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(
+                        incident -> safeDate(incident.createdAt),
+                        Comparator.reverseOrder()
+                ))
                 .toList();
+    }
+
+    /**
+     * Devuelve una fecha segura para poder ordenar aunque el campo no exista.
+     *
+     * @param value fecha leida del documento.
+     * @return texto usado para ordenar.
+     */
+    private String safeDate(String value) {
+        return value == null ? "" : value;
     }
 
     /**

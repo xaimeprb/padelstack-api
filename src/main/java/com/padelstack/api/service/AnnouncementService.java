@@ -107,11 +107,32 @@ public class AnnouncementService {
     }
 
     /**
-     * Gestiona la operación resolveTargetCommunity.
+     * Oculta un anuncio sin eliminar el documento de Firestore.
      *
-     * @param currentUser usuario que realiza la operación.
-     * @param requestedCommunityId valor recibido por el método.
-     * @return texto obtenido por el método.
+     * @param currentUser usuario que realiza la operacion.
+     * @param announcementId identificador del anuncio.
+     */
+    public void delete(UserDocument currentUser, String announcementId) {
+        securityService.requireAdmin(currentUser);
+        AnnouncementDocument document = announcementRepository.findById(announcementId)
+                .orElseThrow(() -> new com.padelstack.api.exception.NotFoundException("Anuncio no encontrado"));
+
+        checkScope(currentUser, document.communityId);
+
+        document.visible = Boolean.FALSE;
+        document.updatedAt = TimeUtils.nowIsoUtc();
+
+        announcementRepository.upsert(document);
+        auditLogService.log("ANNOUNCEMENT_DELETED", "announcement", announcementId, currentUser,
+                java.util.Map.of("communityId", document.communityId));
+    }
+
+    /**
+     * Resuelve la comunidad sobre la que se va a publicar el anuncio.
+     *
+     * @param currentUser usuario que realiza la operacion.
+     * @param requestedCommunityId comunidad solicitada por la peticion.
+     * @return comunidad que se debe usar en la operacion.
      */
     private String resolveTargetCommunity(UserDocument currentUser, String requestedCommunityId) {
         if (Role.SUPERADMIN.name().equals(currentUser.role) && StringUtils.hasText(requestedCommunityId)) {

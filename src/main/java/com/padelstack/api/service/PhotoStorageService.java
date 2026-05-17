@@ -4,6 +4,7 @@ import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Bucket;
 import com.google.firebase.cloud.StorageClient;
 import com.padelstack.api.config.AppProperties;
+import com.padelstack.api.exception.BadRequestException;
 import com.padelstack.api.exception.NotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -46,11 +47,16 @@ public class PhotoStorageService {
         }
 
         try {
-            String safeExt = extractExtension(file.getOriginalFilename());
+            byte[] bytes = file.getBytes();
+            if (bytes.length == 0) {
+                return null;
+            }
+
+            String contentType = resolveContentType(bytes);
+            String safeExt = extensionFor(contentType);
             String objectName = appProperties.getIncidentPhotosFolder() + "/" + incidentId + "/" + UUID.randomUUID() + safeExt;
             Bucket bucket = storageClient.bucket();
-            String contentType = StringUtils.hasText(file.getContentType()) ? file.getContentType() : "application/octet-stream";
-            bucket.create(objectName, file.getBytes(), contentType);
+            bucket.create(objectName, bytes, contentType);
 
             String photoUrl = UriComponentsBuilder.fromHttpUrl(appProperties.getPublicBaseUrl())
                     .path("/api/v1/public/incidents/{incidentId}/photo")
@@ -59,7 +65,12 @@ public class PhotoStorageService {
                     .toUriString();
             return new StoredPhoto(objectName, photoUrl, contentType);
         } catch (IOException ex) {
-            throw new IllegalStateException("No se pudo guardar la foto", ex);
+            throw new BadRequestException("No se pudo subir la imagen");
+        } catch (RuntimeException ex) {
+            if (ex instanceof BadRequestException badRequestException) {
+                throw badRequestException;
+            }
+            throw new BadRequestException("No se pudo subir la imagen");
         }
     }
 
@@ -94,16 +105,54 @@ public class PhotoStorageService {
     }
 
     /**
-     * Gestiona la operación extractExtension.
+     * Resuelve y valida el tipo MIME de la imagen recibida.
      *
-     * @param originalName valor recibido por el método.
-     * @return texto obtenido por el método.
+     * @param bytes contenido recibido del archivo.
+     * @return tipo MIME normalizado.
      */
-    private String extractExtension(String originalName) {
-        if (!StringUtils.hasText(originalName) || !originalName.contains(".")) {
-            return ".bin";
+    private String resolveContentType(byte[] bytes) {
+        String detectedContentType = detectContentType(bytes);
+        if (detectedContentType != null) {
+            return detectedContentType;
         }
-        return originalName.substring(originalName.lastIndexOf('.'));
+        throw new BadRequestException("La imagen seleccionada no es valida");
+    }
+
+    /**
+     * Detecta si el archivo recibido parece JPEG o PNG por sus primeros bytes.
+     *
+     * @param bytes contenido recibido del archivo.
+     * @return tipo MIME detectado o null si no se reconoce.
+     */
+    private String detectContentType(byte[] bytes) {
+        if (bytes.length >= 3
+                && (bytes[0] & 0xFF) == 0xFF
+                && (bytes[1] & 0xFF) == 0xD8
+                && (bytes[2] & 0xFF) == 0xFF) {
+            return "image/jpeg";
+        }
+        if (bytes.length >= 8
+                && (bytes[0] & 0xFF) == 0x89
+                && bytes[1] == 0x50
+                && bytes[2] == 0x4E
+                && bytes[3] == 0x47
+                && bytes[4] == 0x0D
+                && bytes[5] == 0x0A
+                && bytes[6] == 0x1A
+                && bytes[7] == 0x0A) {
+            return "image/png";
+        }
+        return null;
+    }
+
+    /**
+     * Devuelve una extension segura segun el tipo de imagen.
+     *
+     * @param contentType tipo MIME validado.
+     * @return extension del archivo.
+     */
+    private String extensionFor(String contentType) {
+        return "image/png".equals(contentType) ? ".png" : ".jpg";
     }
 
     /**

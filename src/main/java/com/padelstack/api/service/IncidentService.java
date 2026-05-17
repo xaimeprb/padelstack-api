@@ -8,6 +8,7 @@ import com.padelstack.api.exception.ForbiddenException;
 import com.padelstack.api.exception.NotFoundException;
 import com.padelstack.api.model.IncidentDocument;
 import com.padelstack.api.model.IncidentStatus;
+import com.padelstack.api.model.Role;
 import com.padelstack.api.model.UserDocument;
 import com.padelstack.api.repository.IncidentRepository;
 import com.padelstack.api.util.TimeUtils;
@@ -53,6 +54,7 @@ public class IncidentService {
      * @return lista de elementos obtenida.
      */
     public List<IncidentResponse> mine(UserDocument currentUser) {
+        requireCommunity(currentUser);
         return incidentRepository.findMine(currentUser.communityId, currentUser.uid).stream()
                 .map(this::toResponse)
                 .toList();
@@ -66,7 +68,15 @@ public class IncidentService {
      */
     public List<IncidentResponse> all(UserDocument currentUser) {
         securityService.requireAdmin(currentUser);
-        return incidentRepository.findAllByCommunity(currentUser.communityId).stream()
+        Role role = securityService.roleOf(currentUser);
+        List<IncidentDocument> incidents;
+        if (role == Role.SUPERADMIN && isBlank(currentUser.communityId)) {
+            incidents = incidentRepository.findAll();
+        } else {
+            requireCommunity(currentUser);
+            incidents = incidentRepository.findAllByCommunity(currentUser.communityId);
+        }
+        return incidents.stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -84,8 +94,9 @@ public class IncidentService {
                                          String title,
                                          String description,
                                          MultipartFile photo) {
+        requireCommunity(currentUser);
         if (title == null || title.isBlank()) {
-            throw new BadRequestException("Datos inválidos");
+            throw new BadRequestException("El titulo de la incidencia es obligatorio");
         }
 
         String incidentId = UUID.randomUUID().toString().replace("-", "");
@@ -123,7 +134,7 @@ public class IncidentService {
      * @param incidentId identificador de la incidencia.
      */
     public void delete(UserDocument currentUser, String incidentId) {
-        IncidentDocument incident = getRequiredIncident(currentUser.communityId, incidentId);
+        IncidentDocument incident = getRequiredIncident(currentUser, incidentId);
         boolean owner = currentUser.uid.equals(incident.createdByUid);
         boolean admin = securityService.isAdmin(currentUser);
         if (!owner && !admin) {
@@ -131,7 +142,7 @@ public class IncidentService {
         }
         incidentRepository.delete(incidentId);
         auditLogService.log("INCIDENT_DELETED", "incident", incidentId, currentUser,
-                java.util.Map.of("title", incident.title));
+                java.util.Map.of("title", incident.title == null ? "" : incident.title));
     }
 
     /**
@@ -144,7 +155,25 @@ public class IncidentService {
     public IncidentDocument getRequiredIncident(String communityId, String incidentId) {
         IncidentDocument incident = incidentRepository.findById(incidentId)
                 .orElseThrow(() -> new NotFoundException("Incidencia no encontrada"));
-        if (!communityId.equals(incident.communityId)) {
+        if (isBlank(communityId) || !communityId.equals(incident.communityId)) {
+            throw new NotFoundException("Incidencia no encontrada");
+        }
+        return incident;
+    }
+
+    /**
+     * Obtiene una incidencia teniendo en cuenta el alcance del usuario.
+     *
+     * @param currentUser usuario que realiza la operacion.
+     * @param incidentId identificador de la incidencia.
+     * @return incidencia encontrada.
+     */
+    private IncidentDocument getRequiredIncident(UserDocument currentUser, String incidentId) {
+        IncidentDocument incident = incidentRepository.findById(incidentId)
+                .orElseThrow(() -> new NotFoundException("Incidencia no encontrada"));
+        Role role = securityService.roleOf(currentUser);
+        boolean globalSuperAdmin = role == Role.SUPERADMIN && isBlank(currentUser.communityId);
+        if (!globalSuperAdmin && (isBlank(currentUser.communityId) || !currentUser.communityId.equals(incident.communityId))) {
             throw new NotFoundException("Incidencia no encontrada");
         }
         return incident;
@@ -159,16 +188,16 @@ public class IncidentService {
      */
     public void updateStatus(UserDocument currentUser, String incidentId, AdminIncidentStatusUpdateRequest request) {
         securityService.requireAdmin(currentUser);
-        IncidentDocument incident = getRequiredIncident(currentUser.communityId, incidentId);
-        IncidentStatus.valueOf(request.status());
+        IncidentDocument incident = getRequiredIncident(currentUser, incidentId);
+        IncidentStatus status = parseStatus(request.status());
 
-        incident.status = request.status();
+        incident.status = status.name();
         incident.updatedAt = TimeUtils.nowIsoUtc();
         incident.updatedByUid = currentUser.uid;
         incidentRepository.upsert(incident);
 
         auditLogService.log("INCIDENT_STATUS_UPDATED", "incident", incidentId, currentUser,
-                java.util.Map.of("status", request.status()));
+                java.util.Map.of("status", status.name()));
     }
 
     /**
@@ -210,5 +239,43 @@ public class IncidentService {
                 incident.createdByEmail,
                 incident.createdAt
         );
+    }
+
+    /**
+     * Convierte el texto recibido al estado tecnico de incidencia.
+     *
+     * @param status estado recibido en la peticion.
+     * @return estado valido de incidencia.
+     */
+    private IncidentStatus parseStatus(String status) {
+        if (isBlank(status)) {
+            throw new BadRequestException("Estado de incidencia no valido");
+        }
+        try {
+            return IncidentStatus.valueOf(status);
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Estado de incidencia no valido");
+        }
+    }
+
+    /**
+     * Comprueba que el usuario tenga comunidad asociada.
+     *
+     * @param user usuario que realiza la operacion.
+     */
+    private void requireCommunity(UserDocument user) {
+        if (user == null || isBlank(user.communityId)) {
+            throw new BadRequestException("Perfil de usuario incompleto");
+        }
+    }
+
+    /**
+     * Indica si un texto esta vacio.
+     *
+     * @param value texto que se comprueba.
+     * @return true si esta vacio, false en caso contrario.
+     */
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

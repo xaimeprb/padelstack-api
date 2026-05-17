@@ -2,6 +2,7 @@ package com.padelstack.api.controller;
 
 import com.padelstack.api.dto.AdminAnnouncementUpsertRequest;
 import com.padelstack.api.dto.AnnouncementResponse;
+import com.padelstack.api.dto.DeleteResponse;
 import com.padelstack.api.model.UserDocument;
 import com.padelstack.api.service.AnnouncementService;
 import com.padelstack.api.service.SecurityService;
@@ -58,5 +59,20 @@ public class AdminAnnouncementController {
                                        Authentication authentication) {
         UserDocument currentUser = securityService.currentUser(authentication);
         return announcementService.update(currentUser, announcementId, request);
+    }
+
+    /**
+     * Oculta un anuncio si el usuario tiene permisos de administracion.
+     *
+     * @param announcementId identificador del anuncio.
+     * @param authentication informacion de autenticacion del usuario.
+     * @return resultado de la operacion.
+     */
+    @DeleteMapping("/{id}")
+    public DeleteResponse delete(@PathVariable("id") String announcementId,
+                                 Authentication authentication) {
+        UserDocument currentUser = securityService.currentUser(authentication);
+        announcementService.delete(currentUser, announcementId);
+        return new DeleteResponse(true);
     }
 }
