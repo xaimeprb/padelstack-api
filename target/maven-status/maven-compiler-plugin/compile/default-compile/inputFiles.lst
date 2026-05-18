@@ -5,6 +5,7 @@ C:\Users\xaime\Desktop\PADELSTACK\Codigo\padelstack-api\src\main\java\com\padels
 C:\Users\xaime\Desktop\PADELSTACK\Codigo\padelstack-api\src\main\java\com\padelstack\api\config\WebConfig.java
 C:\Users\xaime\Desktop\PADELSTACK\Codigo\padelstack-api\src\main\java\com\padelstack\api\controller\AdminAnnouncementController.java
 C:\Users\xaime\Desktop\PADELSTACK\Codigo\padelstack-api\src\main\java\com\padelstack\api\controller\AdminIncidentController.java
+C:\Users\xaime\Desktop\PADELSTACK\Codigo\padelstack-api\src\main\java\com\padelstack\api\controller\AdminResourceController.java
 C:\Users\xaime\Desktop\PADELSTACK\Codigo\padelstack-api\src\main\java\com\padelstack\api\controller\AdminStatuteController.java
 C:\Users\xaime\Desktop\PADELSTACK\Codigo\padelstack-api\src\main\java\com\padelstack\api\controller\AnnouncementController.java
 C:\Users\xaime\Desktop\PADELSTACK\Codigo\padelstack-api\src\main\java\com\padelstack\api\controller\IncidentController.java
@@ -15,6 +16,7 @@ C:\Users\xaime\Desktop\PADELSTACK\Codigo\padelstack-api\src\main\java\com\padels
 C:\Users\xaime\Desktop\PADELSTACK\Codigo\padelstack-api\src\main\java\com\padelstack\api\controller\UserController.java
 C:\Users\xaime\Desktop\PADELSTACK\Codigo\padelstack-api\src\main\java\com\padelstack\api\dto\AdminAnnouncementUpsertRequest.java
 C:\Users\xaime\Desktop\PADELSTACK\Codigo\padelstack-api\src\main\java\com\padelstack\api\dto\AdminIncidentStatusUpdateRequest.java
+C:\Users\xaime\Desktop\PADELSTACK\Codigo\padelstack-api\src\main\java\com\padelstack\api\dto\AdminResourceRulesUpdateRequest.java
 C:\Users\xaime\Desktop\PADELSTACK\Codigo\padelstack-api\src\main\java\com\padelstack\api\dto\AdminStatuteUpsertRequest.java
 C:\Users\xaime\Desktop\PADELSTACK\Codigo\padelstack-api\src\main\java\com\padelstack\api\dto\AnnouncementResponse.java
 C:\Users\xaime\Desktop\PADELSTACK\Codigo\padelstack-api\src\main\java\com\padelstack\api\dto\AvailabilityDayStatusResponse.java

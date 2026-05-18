@@ -71,7 +71,9 @@ com\padelstack\api\dto\StatuteResponse.class
 com\padelstack\api\service\PhotoStorageService.class
 com\padelstack\api\dto\AvailabilityResponse.class
 com\padelstack\api\repository\AnnouncementRepository.class
+com\padelstack\api\controller\AdminResourceController.class
 com\padelstack\api\controller\IncidentController.class
+com\padelstack\api\dto\AdminResourceRulesUpdateRequest.class
 com\padelstack\api\config\SecurityConfig.class
 com\padelstack\api\model\ResourceType.class
 com\padelstack\api\exception\BadRequestException.class

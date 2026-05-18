@@ -8,6 +8,7 @@ import com.padelstack.api.util.FirestoreSupport;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -69,5 +70,15 @@ public class ResourceRepository extends BaseFirestoreRepository<ResourceDocument
                 .map(doc -> afterRead(doc, doc.toObject(ResourceDocument.class)))
                 .filter(Objects::nonNull)
                 .toList();
+    }
+
+    /**
+     * Actualiza solo el texto de reglas de un recurso.
+     *
+     * @param resourceId identificador del recurso.
+     * @param rulesText texto nuevo de reglas.
+     */
+    public void updateRulesText(String resourceId, String rulesText) {
+        merge(resourceId, Map.of("rulesText", rulesText));
     }
 }
