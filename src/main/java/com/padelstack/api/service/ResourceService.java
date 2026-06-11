@@ -35,13 +35,13 @@ public class ResourceService {
      *
      * @param resourceRepository repositorio usado por la clase.
      * @param reservationService servicio usado por la clase.
-     * @param securityService servicio usado por la clase.
-     * @param auditLogService servicio usado por la clase.
+     * @param securityService    servicio usado por la clase.
+     * @param auditLogService    servicio usado por la clase.
      */
     public ResourceService(ResourceRepository resourceRepository,
-                           ReservationService reservationService,
-                           SecurityService securityService,
-                           AuditLogService auditLogService) {
+            ReservationService reservationService,
+            SecurityService securityService,
+            AuditLogService auditLogService) {
         this.resourceRepository = resourceRepository;
         this.reservationService = reservationService;
         this.securityService = securityService;
@@ -64,13 +64,13 @@ public class ResourceService {
      * Actualiza el texto de reglas de un recurso.
      *
      * @param currentUser usuario que realiza la operacion.
-     * @param resourceId identificador del recurso.
-     * @param request datos recibidos en la peticion.
+     * @param resourceId  identificador del recurso.
+     * @param request     datos recibidos en la peticion.
      * @return recurso actualizado.
      */
     public ResourceResponse updateRules(UserDocument currentUser,
-                                        String resourceId,
-                                        AdminResourceRulesUpdateRequest request) {
+            String resourceId,
+            AdminResourceRulesUpdateRequest request) {
         securityService.requireAdmin(currentUser);
         if (request.rulesText() == null) {
             throw new BadRequestException("Datos invalidos");
@@ -90,7 +90,7 @@ public class ResourceService {
     /**
      * Obtiene un recurso obligatorio dentro de una comunidad.
      *
-     * @param resourceId identificador del recurso.
+     * @param resourceId  identificador del recurso.
      * @param communityId identificador de la comunidad.
      * @return resultado de la operación.
      */
@@ -120,21 +120,47 @@ public class ResourceService {
         if (role == Role.SUPERADMIN && StringUtils.hasText(currentUser.communityId) && !sameCommunity) {
             throw new ForbiddenException("No tienes permisos");
         }
+
+     * Actualiza solo el texto de reglas de un recurso.
+     *
+     * @param currentUser usuario que realiza la operacion.
+     * @param resourceId identificador del recurso.
+     * @param request datos recibidos en la peticion.
+     * @return recurso actualizado.
+     */
+
+    public ResourceResponse updateRules(UserDocument currentUser,
+            String resourceId,
+            AdminResourceRulesUpdateRequest request) {
+        securityService.requireAdmin(currentUser);
+        if (request.rulesText() == null) {
+            throw new BadRequestException("Datos inválidos");
+        }
+
+        ResourceDocument resource = resourceRepository.findById(resourceId)
+                .orElseThrow(() -> new NotFoundException("Recurso no encontrado"));
+        checkScope(currentUser, resource);
+
+        resourceRepository.updateRulesText(resource.resourceId, request.rulesText());
+        resource.rulesText = request.rulesText();
+        auditLogService.log("RESOURCE_RULES_UPDATED", "resource", resource.resourceId, currentUser,
+                Map.of("communityId", resource.communityId == null ? "" : resource.communityId));
+        return toResponse(resource);
     }
 
     /**
      * Calcula la disponibilidad de un recurso en una fecha.
      *
      * @param currentUser usuario que realiza la operación.
-     * @param resourceId identificador del recurso.
-     * @param date fecha usada en la operación.
+     * @param resourceId  identificador del recurso.
+     * @param date        fecha usada en la operación.
      * @return resultado de la operación.
      */
     public AvailabilityResponse availability(UserDocument currentUser, String resourceId, String date) {
         TimeUtils.parseDate(date);
         ResourceDocument resource = getRequiredResourceForCommunity(resourceId, currentUser.communityId);
-        List<ReservationDocument> activeReservations =
-                reservationService.findActiveReservations(resource.communityId, resource.resourceId, date);
+        List<ReservationDocument> activeReservations = reservationService.findActiveReservations(resource.communityId,
+                resource.resourceId, date);
 
         ReservationMode mode = ReservationMode.valueOf(resource.reservationMode);
         if (mode == ReservationMode.FULL_DAY) {
@@ -145,8 +171,7 @@ public class ResourceService {
                         date,
                         mode.name(),
                         null,
-                        new AvailabilityDayStatusResponse(null, AvailabilityStatus.AVAILABLE.name(), false, null)
-                );
+                        new AvailabilityDayStatusResponse(null, AvailabilityStatus.AVAILABLE.name(), false, null));
             }
             boolean ownerCurrentUser = currentUser.uid.equals(reservation.userId);
             return new AvailabilityResponse(
@@ -156,11 +181,10 @@ public class ResourceService {
                     null,
                     new AvailabilityDayStatusResponse(
                             reservation.reservationId,
-                            ownerCurrentUser ? AvailabilityStatus.RESERVED_BY_ME.name() : AvailabilityStatus.RESERVED_BY_OTHER.name(),
+                            ownerCurrentUser ? AvailabilityStatus.RESERVED_BY_ME.name()
+                                    : AvailabilityStatus.RESERVED_BY_OTHER.name(),
                             ownerCurrentUser,
-                            null
-                    )
-            );
+                            null));
         }
 
         if (resource.slotMinutes == null || resource.openTime == null || resource.closeTime == null) {
@@ -174,14 +198,14 @@ public class ResourceService {
     /**
      * Construye slots.
      *
-     * @param currentUser usuario que realiza la operación.
-     * @param resource valor recibido por el método.
+     * @param currentUser        usuario que realiza la operación.
+     * @param resource           valor recibido por el método.
      * @param activeReservations valor recibido por el método.
      * @return lista de elementos obtenida.
      */
     private List<AvailabilitySlotResponse> buildSlots(UserDocument currentUser,
-                                                      ResourceDocument resource,
-                                                      List<ReservationDocument> activeReservations) {
+            ResourceDocument resource,
+            List<ReservationDocument> activeReservations) {
         List<AvailabilitySlotResponse> result = new ArrayList<>();
         LocalTime open = TimeUtils.parseTime(resource.openTime);
         LocalTime close = TimeUtils.parseTime(resource.closeTime);
@@ -205,7 +229,8 @@ public class ResourceService {
             if (matchingReservation != null) {
                 reservationId = matchingReservation.reservationId;
                 ownerCurrentUser = currentUser.uid.equals(matchingReservation.userId);
-                status = ownerCurrentUser ? AvailabilityStatus.RESERVED_BY_ME.name() : AvailabilityStatus.RESERVED_BY_OTHER.name();
+                status = ownerCurrentUser ? AvailabilityStatus.RESERVED_BY_ME.name()
+                        : AvailabilityStatus.RESERVED_BY_OTHER.name();
             } else if (!Boolean.TRUE.equals(resource.active)) {
                 status = AvailabilityStatus.BLOCKED.name();
                 blockReason = "RESOURCE_INACTIVE";
@@ -218,18 +243,40 @@ public class ResourceService {
                     endText,
                     status,
                     ownerCurrentUser,
-                    blockReason
-            ));
+                    blockReason));
             current = end;
         }
         return result;
     }
 
     /**
+     * <<<<<<< HEAD
      * Convierte un recurso interno en un DTO de respuesta.
      *
      * @param resource recurso recibido desde Firestore.
      * @return DTO de respuesta.
+     *         =======
+     *         Comprueba que el usuario pueda modificar el recurso indicado.
+     *
+     * @param currentUser usuario que realiza la operacion.
+     * @param resource    recurso que se quiere modificar.
+     */
+    private void checkScope(UserDocument currentUser, ResourceDocument resource) {
+        Role role = securityService.roleOf(currentUser);
+        if (role == Role.SUPERADMIN) {
+            return;
+        }
+        if (currentUser.communityId == null || !currentUser.communityId.equals(resource.communityId)) {
+            throw new ForbiddenException("No tienes permisos");
+        }
+    }
+
+    /**
+     * Convierte un documento interno en la respuesta usada por la API.
+     *
+     * @param resource recurso que se convierte.
+     * @return respuesta del recurso.
+     *         >>>>>>> a67c33b91679d6d2998bb2e871bb77754504c970
      */
     private ResourceResponse toResponse(ResourceDocument resource) {
         return new ResourceResponse(
@@ -240,7 +287,6 @@ public class ResourceService {
                 resource.slotMinutes,
                 resource.openTime,
                 resource.closeTime,
-                resource.rulesText
-        );
+                resource.rulesText);
     }
 }

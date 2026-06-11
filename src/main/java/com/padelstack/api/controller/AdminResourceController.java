@@ -20,7 +20,8 @@ public class AdminResourceController {
     private final SecurityService securityService;
 
     /**
-     * Crea una instancia de AdminResourceController con las dependencias necesarias.
+     * Crea una instancia de AdminResourceController con las dependencias
+     * necesarias.
      *
      * @param resourceService servicio usado por la clase.
      * @param securityService servicio usado por la clase.
@@ -33,15 +34,15 @@ public class AdminResourceController {
     /**
      * Actualiza solo el texto de reglas de un recurso.
      *
-     * @param resourceId identificador del recurso.
-     * @param request datos recibidos en la peticion.
+     * @param resourceId     identificador del recurso.
+     * @param request        datos recibidos en la peticion.
      * @param authentication informacion de autenticacion del usuario.
      * @return recurso actualizado.
      */
     @PutMapping("/{resourceId}/rules")
     public ResourceResponse updateRules(@PathVariable String resourceId,
-                                        @Valid @RequestBody AdminResourceRulesUpdateRequest request,
-                                        Authentication authentication) {
+            @Valid @RequestBody AdminResourceRulesUpdateRequest request,
+            Authentication authentication) {
         UserDocument currentUser = securityService.currentUser(authentication);
         return resourceService.updateRules(currentUser, resourceId, request);
     }

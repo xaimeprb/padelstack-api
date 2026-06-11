@@ -2,6 +2,7 @@ package com.padelstack.api.service;
 
 import com.padelstack.api.dto.AdminStatuteUpsertRequest;
 import com.padelstack.api.dto.StatuteResponse;
+import com.padelstack.api.exception.BadRequestException;
 import com.padelstack.api.exception.ForbiddenException;
 import com.padelstack.api.exception.NotFoundException;
 import com.padelstack.api.model.Role;
@@ -10,6 +11,7 @@ import com.padelstack.api.model.UserDocument;
 import com.padelstack.api.repository.StatuteRepository;
 import com.padelstack.api.util.TimeUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 /**
  * Servicio encargado de la lógica relacionada con statute.
@@ -43,6 +45,7 @@ public class StatuteService {
      * @return resultado de la operación.
      */
     public StatuteResponse currentForUser(UserDocument currentUser) {
+        requireCommunity(currentUser.communityId);
         StatuteDocument document = statuteRepository.findById(currentUser.communityId)
                 .orElseThrow(() -> new NotFoundException("Estatutos no encontrados"));
 
@@ -59,7 +62,11 @@ public class StatuteService {
      */
     public StatuteResponse upsert(UserDocument currentUser, String communityId, AdminStatuteUpsertRequest request) {
         securityService.requireAdmin(currentUser);
+        requireCommunity(communityId);
 
+        if (!Role.SUPERADMIN.name().equals(currentUser.role)) {
+            requireCommunity(currentUser.communityId);
+        }
         if (!Role.SUPERADMIN.name().equals(currentUser.role) && !currentUser.communityId.equals(communityId)) {
             throw new ForbiddenException("No tienes permisos");
         }
@@ -93,5 +100,16 @@ public class StatuteService {
                 document.updatedAt,
                 document.updatedByUid
         );
+    }
+
+    /**
+     * Comprueba que exista comunidad para operar con estatutos.
+     *
+     * @param communityId identificador de la comunidad.
+     */
+    private void requireCommunity(String communityId) {
+        if (!StringUtils.hasText(communityId)) {
+            throw new BadRequestException("Perfil de usuario incompleto");
+        }
     }
 }

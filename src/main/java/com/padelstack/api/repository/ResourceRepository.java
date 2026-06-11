@@ -40,7 +40,7 @@ public class ResourceRepository extends BaseFirestoreRepository<ResourceDocument
      * Ajusta un documento leído desde Firestore antes de devolverlo.
      *
      * @param snapshot valor recibido por el método.
-     * @param entity valor recibido por el método.
+     * @param entity   valor recibido por el método.
      * @return resultado de la operación.
      */
     @Override
@@ -76,7 +76,11 @@ public class ResourceRepository extends BaseFirestoreRepository<ResourceDocument
      * Actualiza solo el campo de reglas de un recurso.
      *
      * @param resourceId identificador del recurso.
-     * @param rulesText texto actualizado de las reglas.
+     * @param rulesText  texto actualizado de las reglas.
+     *                   Actualiza solo el texto de reglas de un recurso.
+     *
+     * @param resourceId identificador del recurso.
+     * @param rulesText  texto nuevo de reglas.
      */
     public void updateRulesText(String resourceId, String rulesText) {
         merge(resourceId, Map.of("rulesText", rulesText));
