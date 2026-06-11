@@ -15,9 +15,12 @@ spring:
 app:
   public-base-url: ${APP_PUBLIC_BASE_URL:http://10.0.2.2:8080}
   incident-photos-folder: ${APP_INCIDENT_PHOTOS_FOLDER:incident-photos}
+  cors-allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5174,http://127.0.0.1:5174,http://localhost:5173,http://127.0.0.1:5173}
 
 firebase:
-  credentials-path: ${FIREBASE_CREDENTIALS_PATH:}
+  service-account-json: ${FIREBASE_SERVICE_ACCOUNT_JSON:}
+  service-account-base64: ${FIREBASE_SERVICE_ACCOUNT_BASE64:}
+  config-path: ${FIREBASE_CONFIG_PATH:}
   project-id: ${FIREBASE_PROJECT_ID:}
   storage-bucket: ${FIREBASE_STORAGE_BUCKET:}
 

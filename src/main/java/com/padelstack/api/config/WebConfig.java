@@ -11,28 +11,35 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import java.util.List;
 
 /**
- * Clase de configuración de web.
+ * Configura comportamiento HTTP transversal de la API.
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    /**
-     * Configura los permisos CORS de la API.
-     *
-     * @param registry valor recibido por el método.
-     */
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**")
-                .allowedOriginPatterns("*")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*");
+    private final AppProperties appProperties;
+
+    public WebConfig(AppProperties appProperties) {
+        this.appProperties = appProperties;
     }
 
     /**
-     * Configura la negociación de contenido de las respuestas.
+     * Permite llamadas CORS desde PWA local y PanelAdmin local usando origenes configurables.
      *
-     * @param configurer valor recibido por el método.
+     * @param registry registro de CORS de Spring MVC.
+     */
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+                .allowedOrigins(appProperties.getCorsAllowedOrigins().toArray(String[]::new))
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With")
+                .maxAge(3600);
+    }
+
+    /**
+     * Devuelve JSON por defecto cuando el cliente no envia cabecera Accept especifica.
+     *
+     * @param configurer configurador de negociacion de contenido.
      */
     @Override
     public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
@@ -40,9 +47,9 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     /**
-     * Ajusta los conversores HTTP usados por Spring.
+     * Evita que Spring responda XML accidentalmente en endpoints JSON.
      *
-     * @param converters valor recibido por el método.
+     * @param converters conversores HTTP registrados.
      */
     @Override
     public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {

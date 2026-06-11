@@ -13,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
+import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -37,7 +38,11 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
-        return antPathMatcher.match("/api/v1/public/**", path)
+        return CorsUtils.isPreFlightRequest(request)
+                || !StringUtils.hasText(path)
+                || antPathMatcher.match("/", path)
+                || antPathMatcher.match("/api/v1/health", path)
+                || antPathMatcher.match("/api/v1/public/**", path)
                 || antPathMatcher.match("/actuator/health", path);
     }
 

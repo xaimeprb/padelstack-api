@@ -3,71 +3,57 @@ package com.padelstack.api.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Clase de propiedades que recoge la configuración de firebase.
+ * Propiedades de configuracion de Firebase Admin para el backend.
  */
 @ConfigurationProperties(prefix = "firebase")
 public class FirebaseProperties {
 
-    /**
-     * Ruta al JSON de service account. Si está vacío, se intenta usar
-     * GOOGLE_APPLICATION_CREDENTIALS / Application Default Credentials.
-     */
-    private String credentialsPath;
+    private String serviceAccountJson;
+
+    private String serviceAccountBase64;
+
+    private String configPath;
 
     private String projectId;
 
     private String storageBucket;
 
-    /**
-     * Devuelve credentials path.
-     *
-     * @return texto obtenido por el método.
-     */
-    public String getCredentialsPath() {
-        return credentialsPath;
+    public String getServiceAccountJson() {
+        return serviceAccountJson;
     }
 
-    /**
-     * Actualiza credentials path.
-     *
-     * @param credentialsPath valor recibido por el método.
-     */
-    public void setCredentialsPath(String credentialsPath) {
-        this.credentialsPath = credentialsPath;
+    public void setServiceAccountJson(String serviceAccountJson) {
+        this.serviceAccountJson = serviceAccountJson;
     }
 
-    /**
-     * Devuelve project id.
-     *
-     * @return texto obtenido por el método.
-     */
+    public String getServiceAccountBase64() {
+        return serviceAccountBase64;
+    }
+
+    public void setServiceAccountBase64(String serviceAccountBase64) {
+        this.serviceAccountBase64 = serviceAccountBase64;
+    }
+
+    public String getConfigPath() {
+        return configPath;
+    }
+
+    public void setConfigPath(String configPath) {
+        this.configPath = configPath;
+    }
+
     public String getProjectId() {
         return projectId;
     }
 
-    /**
-     * Actualiza project id.
-     *
-     * @param projectId valor recibido por el método.
-     */
     public void setProjectId(String projectId) {
         this.projectId = projectId;
     }
 
-    /**
-     * Devuelve storage bucket.
-     *
-     * @return texto obtenido por el método.
-     */
     public String getStorageBucket() {
         return storageBucket;
     }
 
-    /**
-     * Actualiza storage bucket.
-     *
-     * @param storageBucket valor recibido por el método.
-     */
     public void setStorageBucket(String storageBucket) {
         this.storageBucket = storageBucket;
     }

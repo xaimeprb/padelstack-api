@@ -23,7 +23,7 @@ if ($Build -or !(Test-Path $JarPath)) {
     }
 }
 
-$env:FIREBASE_CREDENTIALS_PATH = $CredentialsPath
+$env:FIREBASE_CONFIG_PATH = $CredentialsPath
 $env:FIREBASE_PROJECT_ID = "padelstack"
 $env:FIREBASE_STORAGE_BUCKET = "padelstack.firebasestorage.app"
 $env:APP_PUBLIC_BASE_URL = "http://10.0.2.2:$Port"

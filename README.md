@@ -34,14 +34,20 @@ Backend Spring Boot para la app Android de PadelStack.
 
 ## Configuración
 
-Variables recomendadas:
+Variables recomendadas para Firebase Admin SDK:
 
 ```bash
-export FIREBASE_CREDENTIALS_PATH=/ruta/service-account.json
+export FIREBASE_SERVICE_ACCOUNT_JSON=''
+# o bien:
+export FIREBASE_SERVICE_ACCOUNT_BASE64=''
+# o bien:
+export FIREBASE_CONFIG_PATH=/ruta/firebase-service-account.json
 export FIREBASE_PROJECT_ID=tu-proyecto-firebase
 export FIREBASE_STORAGE_BUCKET=tu-proyecto.firebasestorage.app
 export APP_PUBLIC_BASE_URL=http://10.0.2.2:8080
 ```
+
+Usa solo una variable de credenciales privadas a la vez. El JSON de service account no debe copiarse a Vite, React, `public`, `src/assets` ni ningun directorio servido al navegador. Si no se configura ninguna de las variables anteriores, el backend intenta `config/firebase-service-account.json` para desarrollo local y despues Application Default Credentials.
 
 También puedes usar `GOOGLE_APPLICATION_CREDENTIALS` si prefieres Application Default Credentials.
 

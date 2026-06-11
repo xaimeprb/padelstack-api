@@ -16,6 +16,7 @@ com\padelstack\api\exception\ForbiddenException.class
 com\padelstack\api\exception\ApiException.class
 com\padelstack\api\dto\DeleteResponse.class
 com\padelstack\api\controller\ResourceController.class
+com\padelstack\api\config\FirebaseConfig$CredentialsSource.class
 com\padelstack\api\model\Role.class
 com\padelstack\api\dto\ResourceResponse.class
 com\padelstack\api\controller\AdminIncidentController.class
@@ -38,6 +39,7 @@ com\padelstack\api\repository\ResourceRepository.class
 com\padelstack\api\model\AvailabilityStatus.class
 com\padelstack\api\controller\AdminAnnouncementController.class
 com\padelstack\api\dto\ReservationSummaryResponse.class
+com\padelstack\api\controller\HealthController.class
 com\padelstack\api\PadelStackApiApplication.class
 com\padelstack\api\util\TimeUtils.class
 com\padelstack\api\controller\AdminStatuteController.class
@@ -68,10 +70,13 @@ com\padelstack\api\config\FirebaseConfig.class
 com\padelstack\api\exception\GlobalExceptionHandler.class
 com\padelstack\api\dto\BootstrapUserRequest.class
 com\padelstack\api\dto\StatuteResponse.class
+com\padelstack\api\config\FirebaseConfig$1.class
 com\padelstack\api\service\PhotoStorageService.class
 com\padelstack\api\dto\AvailabilityResponse.class
 com\padelstack\api\repository\AnnouncementRepository.class
+com\padelstack\api\controller\AdminResourceController.class
 com\padelstack\api\controller\IncidentController.class
+com\padelstack\api\dto\AdminResourceRulesUpdateRequest.class
 com\padelstack\api\config\SecurityConfig.class
 com\padelstack\api\model\ResourceType.class
 com\padelstack\api\exception\BadRequestException.class
