@@ -73,14 +73,10 @@ public class ResourceRepository extends BaseFirestoreRepository<ResourceDocument
     }
 
     /**
-     * Actualiza solo el campo de reglas de un recurso.
+     * Actualiza solo el texto de reglas de un recurso.
      *
      * @param resourceId identificador del recurso.
-     * @param rulesText  texto actualizado de las reglas.
-     *                   Actualiza solo el texto de reglas de un recurso.
-     *
-     * @param resourceId identificador del recurso.
-     * @param rulesText  texto nuevo de reglas.
+     * @param rulesText  texto nuevo de las reglas.
      */
     public void updateRulesText(String resourceId, String rulesText) {
         merge(resourceId, Map.of("rulesText", rulesText));
