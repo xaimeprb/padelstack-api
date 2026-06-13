@@ -40,7 +40,7 @@ public class UserService {
      * @param request datos recibidos en la petición.
      */
     public void bootstrap(AuthenticatedUser authUser, BootstrapUserRequest request) {
-        CommunityDocument community = communityService.getRequiredCommunity(request.communityId());
+        CommunityDocument community = communityService.getRequiredActiveCommunityForRegistration(request.communityId());
         communityService.validateUnitBelongsToCommunity(community, request.unitDisplay());
 
         Optional<UserDocument> existingOpt = userRepository.findById(authUser.uid());
