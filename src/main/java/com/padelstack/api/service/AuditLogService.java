@@ -47,9 +47,32 @@ public class AuditLogService {
         log.entityId = entityId;
         log.communityId = actor.communityId;
         log.actorUid = actor.uid;
+        log.actorName = displayName(actor);
         log.actorEmail = actor.email;
         log.createdAt = TimeUtils.nowIsoUtc();
         log.details = details;
         auditLogRepository.upsert(log);
+    }
+
+    private static String displayName(UserDocument user) {
+        String fullName = safe(user.fullName).trim();
+        if (!fullName.isBlank()) {
+            return fullName;
+        }
+        String joined = (safe(user.firstName) + " " + safe(user.lastName)).trim();
+        if (!joined.isBlank()) {
+            return joined;
+        }
+        if (!safe(user.username).isBlank()) {
+            return user.username;
+        }
+        if (!safe(user.email).isBlank()) {
+            return user.email;
+        }
+        return user.uid;
+    }
+
+    private static String safe(String value) {
+        return value == null ? "" : value;
     }
 }

@@ -2,6 +2,7 @@ package com.padelstack.api.controller;
 
 import com.padelstack.api.dto.AdminAnnouncementResponse;
 import com.padelstack.api.dto.AdminAnnouncementUpsertRequest;
+import com.padelstack.api.dto.AdminAnnouncementVisibilityUpdateRequest;
 import com.padelstack.api.dto.AnnouncementResponse;
 import com.padelstack.api.dto.DeleteResponse;
 import com.padelstack.api.model.UserDocument;
@@ -77,6 +78,14 @@ public class AdminAnnouncementController {
         UserDocument currentUser = securityService.currentUser(authentication);
         securityService.requireSuperAdmin(currentUser);
         return announcementService.update(currentUser, announcementId, request);
+    }
+
+    @PatchMapping("/{id}/visibility")
+    public AdminAnnouncementResponse updateVisibility(@PathVariable("id") String announcementId,
+                                                      @Valid @RequestBody AdminAnnouncementVisibilityUpdateRequest request,
+                                                      Authentication authentication) {
+        UserDocument currentUser = securityService.currentUser(authentication);
+        return adminService.updateAnnouncementVisibility(currentUser, announcementId, request);
     }
 
     /**

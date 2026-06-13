@@ -3,6 +3,7 @@ package com.padelstack.api.controller;
 import com.padelstack.api.dto.AdminUserResponse;
 import com.padelstack.api.dto.AdminUserRoleUpdateRequest;
 import com.padelstack.api.dto.AdminUserStatusUpdateRequest;
+import com.padelstack.api.dto.AdminUserUpdateRequest;
 import com.padelstack.api.model.UserDocument;
 import com.padelstack.api.service.AdminService;
 import com.padelstack.api.service.SecurityService;
@@ -47,6 +48,14 @@ public class AdminUserController {
     public AdminUserResponse one(@PathVariable String uid, Authentication authentication) {
         UserDocument currentUser = securityService.currentUser(authentication);
         return adminService.user(currentUser, uid);
+    }
+
+    @PatchMapping("/{uid}")
+    public AdminUserResponse update(@PathVariable String uid,
+                                    @Valid @RequestBody AdminUserUpdateRequest request,
+                                    Authentication authentication) {
+        UserDocument currentUser = securityService.currentUser(authentication);
+        return adminService.updateUser(currentUser, uid, request);
     }
 
     @PatchMapping("/{uid}/role")

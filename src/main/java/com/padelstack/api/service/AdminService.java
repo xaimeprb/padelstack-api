@@ -1,31 +1,41 @@
 package com.padelstack.api.service;
 
 import com.padelstack.api.dto.AdminAnnouncementResponse;
+import com.padelstack.api.dto.AdminAnnouncementVisibilityUpdateRequest;
+import com.padelstack.api.dto.AdminAuditLogResponse;
 import com.padelstack.api.dto.AdminCommunityResponse;
 import com.padelstack.api.dto.AdminDashboardResponse;
 import com.padelstack.api.dto.AdminIncidentResponse;
 import com.padelstack.api.dto.AdminProfileResponse;
+import com.padelstack.api.dto.AdminReservationCancelRequest;
 import com.padelstack.api.dto.AdminReservationResponse;
 import com.padelstack.api.dto.AdminReservationStatusUpdateRequest;
 import com.padelstack.api.dto.AdminResourceResponse;
+import com.padelstack.api.dto.AdminResourceStatusUpdateRequest;
+import com.padelstack.api.dto.AdminResourceUpdateRequest;
 import com.padelstack.api.dto.AdminUserResponse;
 import com.padelstack.api.dto.AdminUserRoleUpdateRequest;
 import com.padelstack.api.dto.AdminUserStatusUpdateRequest;
+import com.padelstack.api.dto.AdminUserUpdateRequest;
 import com.padelstack.api.dto.StatuteResponse;
 import com.padelstack.api.exception.BadRequestException;
 import com.padelstack.api.exception.ForbiddenException;
 import com.padelstack.api.exception.NotFoundException;
 import com.padelstack.api.model.AnnouncementDocument;
+import com.padelstack.api.model.AuditLogDocument;
 import com.padelstack.api.model.CommunityDocument;
 import com.padelstack.api.model.IncidentDocument;
 import com.padelstack.api.model.IncidentStatus;
+import com.padelstack.api.model.ReservationMode;
 import com.padelstack.api.model.ReservationDocument;
 import com.padelstack.api.model.ReservationStatus;
 import com.padelstack.api.model.ResourceDocument;
+import com.padelstack.api.model.ResourceType;
 import com.padelstack.api.model.Role;
 import com.padelstack.api.model.StatuteDocument;
 import com.padelstack.api.model.UserDocument;
 import com.padelstack.api.repository.AnnouncementRepository;
+import com.padelstack.api.repository.AuditLogRepository;
 import com.padelstack.api.repository.CommunityRepository;
 import com.padelstack.api.repository.IncidentRepository;
 import com.padelstack.api.repository.ReservationRepository;
@@ -35,7 +45,9 @@ import com.padelstack.api.repository.UserRepository;
 import com.padelstack.api.util.TimeUtils;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalTime;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -58,6 +70,8 @@ public class AdminService {
     private final AnnouncementRepository announcementRepository;
     private final StatuteRepository statuteRepository;
     private final IncidentRepository incidentRepository;
+    private final AuditLogRepository auditLogRepository;
+    private final CommunityService communityService;
     private final SecurityService securityService;
     private final AuditLogService auditLogService;
 
@@ -71,6 +85,8 @@ public class AdminService {
                         AnnouncementRepository announcementRepository,
                         StatuteRepository statuteRepository,
                         IncidentRepository incidentRepository,
+                        AuditLogRepository auditLogRepository,
+                        CommunityService communityService,
                         SecurityService securityService,
                         AuditLogService auditLogService) {
         this.userRepository = userRepository;
@@ -80,6 +96,8 @@ public class AdminService {
         this.announcementRepository = announcementRepository;
         this.statuteRepository = statuteRepository;
         this.incidentRepository = incidentRepository;
+        this.auditLogRepository = auditLogRepository;
+        this.communityService = communityService;
         this.securityService = securityService;
         this.auditLogService = auditLogService;
     }
@@ -146,6 +164,32 @@ public class AdminService {
     }
 
     /**
+     * Lista registros de auditoria con filtros opcionales.
+     */
+    public List<AdminAuditLogResponse> auditLogs(UserDocument currentUser,
+                                                 String actorUid,
+                                                 String action,
+                                                 String entityType,
+                                                 String entityId,
+                                                 String dateFrom,
+                                                 String dateTo,
+                                                 String search) {
+        requireSuperAdmin(currentUser);
+        return auditLogRepository.findAll().stream()
+                .filter(log -> isBlank(actorUid) || Objects.equals(log.actorUid, actorUid))
+                .filter(log -> isBlank(action) || Objects.equals(log.action, action))
+                .filter(log -> isBlank(entityType) || Objects.equals(log.entityType, entityType))
+                .filter(log -> isBlank(entityId) || Objects.equals(log.entityId, entityId))
+                .filter(log -> isBlank(dateFrom) || safe(log.createdAt).compareTo(dateFrom) >= 0)
+                .filter(log -> isBlank(dateTo) || safe(log.createdAt).compareTo(dateTo + "T23:59:59") <= 0)
+                .filter(log -> matchesAuditSearch(log, search))
+                .sorted(desc(log -> safe(log.createdAt)))
+                .limit(200)
+                .map(this::toAuditLogResponse)
+                .toList();
+    }
+
+    /**
      * Lista usuarios con filtros opcionales.
      */
     public List<AdminUserResponse> users(UserDocument currentUser,
@@ -170,6 +214,65 @@ public class AdminService {
     public AdminUserResponse user(UserDocument currentUser, String uid) {
         requireSuperAdmin(currentUser);
         return toUserResponse(getRequiredUser(uid));
+    }
+
+    /**
+     * Edita datos basicos de un usuario sin cambiar credenciales de Firebase.
+     */
+    public AdminUserResponse updateUser(UserDocument currentUser,
+                                        String uid,
+                                        AdminUserUpdateRequest request) {
+        requireSuperAdmin(currentUser);
+        if (request == null) {
+            throw new BadRequestException("Datos de usuario no validos.");
+        }
+
+        UserDocument target = getRequiredUser(uid);
+        String previousCommunityId = target.communityId;
+        String previousUnitDisplay = target.unitDisplay;
+
+        if (request.username() != null) {
+            target.username = normalizeNullable(request.username());
+        }
+        if (request.firstName() != null) {
+            target.firstName = normalizeNullable(request.firstName());
+        }
+        if (request.lastName() != null) {
+            target.lastName = normalizeNullable(request.lastName());
+        }
+        if (request.phone() != null) {
+            target.phone = normalizeNullable(request.phone());
+        }
+        if (request.communityId() != null) {
+            target.communityId = normalizeNullable(request.communityId());
+            target.communityName = null;
+        }
+        if (request.unitDisplay() != null) {
+            target.unitDisplay = normalizeNullable(request.unitDisplay());
+        }
+
+        CommunityDocument community = null;
+        if (!isBlank(target.communityId)) {
+            community = communityService.getRequiredCommunity(target.communityId);
+            target.communityName = community.name;
+        } else if (!isBlank(target.unitDisplay)) {
+            throw new BadRequestException("Selecciona una comunidad para asignar vivienda.");
+        }
+
+        if (community != null && !isBlank(target.unitDisplay)) {
+            communityService.validateUnitBelongsToCommunity(community, target.unitDisplay);
+        }
+
+        target.fullName = buildFullName(target.firstName, target.lastName);
+        target.updatedAt = TimeUtils.nowIsoUtc();
+        userRepository.upsert(target);
+        auditLogService.log("ADMIN_USER_UPDATED", "user", target.uid, currentUser,
+                metadata(
+                        "previousCommunityId", previousCommunityId,
+                        "communityId", target.communityId,
+                        "previousUnitDisplay", previousUnitDisplay,
+                        "unitDisplay", target.unitDisplay));
+        return toUserResponse(target);
     }
 
     /**
@@ -259,6 +362,86 @@ public class AdminService {
     }
 
     /**
+     * Edita la configuracion de un recurso sin cambiar su identificador.
+     */
+    public AdminResourceResponse updateResource(UserDocument currentUser,
+                                                String resourceId,
+                                                AdminResourceUpdateRequest request) {
+        requireSuperAdmin(currentUser);
+        if (request == null) {
+            throw new BadRequestException("Datos de recurso no validos.");
+        }
+
+        ResourceDocument resource = resourceRepository.findById(resourceId)
+                .orElseThrow(() -> new NotFoundException("Recurso no encontrado"));
+        String previousStatus = String.valueOf(Boolean.TRUE.equals(resource.active));
+
+        if (request.name() != null) {
+            resource.name = normalizeRequired(request.name(), "El nombre del recurso es obligatorio.");
+        }
+        if (request.communityId() != null) {
+            resource.communityId = normalizeRequired(request.communityId(), "La comunidad del recurso es obligatoria.");
+            communityService.getRequiredCommunity(resource.communityId);
+        }
+        if (request.type() != null) {
+            resource.type = parseResourceType(request.type()).name();
+        }
+        if (request.reservationMode() != null) {
+            resource.reservationMode = parseReservationMode(request.reservationMode()).name();
+        }
+        if (request.slotMinutes() != null) {
+            if (request.slotMinutes() <= 0) {
+                throw new BadRequestException("La duracion de los turnos debe ser mayor que cero.");
+            }
+            resource.slotMinutes = request.slotMinutes();
+        }
+        if (request.openTime() != null) {
+            resource.openTime = normalizeRequired(request.openTime(), "La hora de apertura es obligatoria.");
+        }
+        if (request.closeTime() != null) {
+            resource.closeTime = normalizeRequired(request.closeTime(), "La hora de cierre es obligatoria.");
+        }
+        if (request.rulesText() != null) {
+            resource.rulesText = request.rulesText().trim();
+        }
+        if (request.active() != null) {
+            resource.active = request.active();
+        }
+
+        validateResourceSchedule(resource);
+        resourceRepository.save(resource.resourceId, resource);
+        auditLogService.log("ADMIN_RESOURCE_UPDATED", "resource", resource.resourceId, currentUser,
+                metadata(
+                        "communityId", resource.communityId,
+                        "type", resource.type,
+                        "reservationMode", resource.reservationMode,
+                        "previousActive", previousStatus,
+                        "active", String.valueOf(Boolean.TRUE.equals(resource.active))));
+        return toResourceResponse(resource);
+    }
+
+    /**
+     * Activa o desactiva un recurso sin eliminarlo.
+     */
+    public AdminResourceResponse updateResourceStatus(UserDocument currentUser,
+                                                      String resourceId,
+                                                      AdminResourceStatusUpdateRequest request) {
+        requireSuperAdmin(currentUser);
+        if (request == null || request.active() == null) {
+            throw new BadRequestException("Estado de recurso no valido.");
+        }
+
+        ResourceDocument resource = resourceRepository.findById(resourceId)
+                .orElseThrow(() -> new NotFoundException("Recurso no encontrado"));
+        Boolean previousActive = resource.active;
+        resource.active = request.active();
+        resourceRepository.save(resource.resourceId, resource);
+        auditLogService.log("ADMIN_RESOURCE_STATUS_UPDATED", "resource", resource.resourceId, currentUser,
+                metadata("previousActive", previousActive, "active", resource.active));
+        return toResourceResponse(resource);
+    }
+
+    /**
      * Lista reservas con filtros opcionales.
      */
     public List<AdminReservationResponse> reservations(UserDocument currentUser,
@@ -315,6 +498,39 @@ public class AdminService {
     }
 
     /**
+     * Cancela una reserva dejando trazabilidad de quien lo hizo y por que.
+     */
+    public AdminReservationResponse cancelReservation(UserDocument currentUser,
+                                                      String reservationId,
+                                                      AdminReservationCancelRequest request) {
+        requireSuperAdmin(currentUser);
+        if (request == null || isBlank(request.reason())) {
+            throw new BadRequestException("Indica el motivo de la cancelacion.");
+        }
+
+        ReservationDocument reservation = getRequiredReservation(reservationId);
+        ReservationStatus currentStatus = parseReservationStatus(reservation.status);
+        if (currentStatus != ReservationStatus.ACTIVE) {
+            throw new BadRequestException("La reserva ya esta cancelada.");
+        }
+
+        String now = TimeUtils.nowIsoUtc();
+        reservation.status = ReservationStatus.CANCELLED.name();
+        reservation.updatedAt = now;
+        reservation.cancelledAt = now;
+        reservation.cancelledByUid = currentUser.uid;
+        reservation.cancelledByName = displayName(currentUser);
+        reservation.cancellationReason = request.reason().trim();
+        reservationRepository.upsert(reservation);
+        auditLogService.log("ADMIN_RESERVATION_CANCELLED", "reservation", reservation.reservationId, currentUser,
+                metadata(
+                        "resourceId", reservation.resourceId,
+                        "date", reservation.date,
+                        "reason", reservation.cancellationReason));
+        return toReservationResponse(reservation);
+    }
+
+    /**
      * Lista anuncios.
      */
     public List<AdminAnnouncementResponse> announcements(UserDocument currentUser, String communityId) {
@@ -324,6 +540,28 @@ public class AdminService {
                 .sorted(desc(announcement -> safe(announcement.publishedAt) + safe(announcement.updatedAt)))
                 .map(this::toAnnouncementResponse)
                 .toList();
+    }
+
+    /**
+     * Muestra u oculta un anuncio sin borrarlo fisicamente.
+     */
+    public AdminAnnouncementResponse updateAnnouncementVisibility(UserDocument currentUser,
+                                                                  String announcementId,
+                                                                  AdminAnnouncementVisibilityUpdateRequest request) {
+        requireSuperAdmin(currentUser);
+        if (request == null || request.visible() == null) {
+            throw new BadRequestException("Estado de anuncio no valido.");
+        }
+
+        AnnouncementDocument announcement = announcementRepository.findById(announcementId)
+                .orElseThrow(() -> new NotFoundException("Anuncio no encontrado"));
+        Boolean previousVisible = announcement.visible;
+        announcement.visible = request.visible();
+        announcement.updatedAt = TimeUtils.nowIsoUtc();
+        announcementRepository.upsert(announcement);
+        auditLogService.log("ADMIN_ANNOUNCEMENT_VISIBILITY_UPDATED", "announcement", announcement.announcementId,
+                currentUser, metadata("previousVisible", previousVisible, "visible", announcement.visible));
+        return toAnnouncementResponse(announcement);
     }
 
     /**
@@ -387,6 +625,39 @@ public class AdminService {
         }
     }
 
+    private ResourceType parseResourceType(String type) {
+        try {
+            return ResourceType.valueOf(type);
+        } catch (RuntimeException ex) {
+            throw new BadRequestException("Tipo de recurso no valido.");
+        }
+    }
+
+    private ReservationMode parseReservationMode(String reservationMode) {
+        try {
+            return ReservationMode.valueOf(reservationMode);
+        } catch (RuntimeException ex) {
+            throw new BadRequestException("Modo de reserva no valido.");
+        }
+    }
+
+    private void validateResourceSchedule(ResourceDocument resource) {
+        ReservationMode mode = parseReservationMode(resource.reservationMode);
+        if (mode == ReservationMode.SLOT) {
+            if (resource.slotMinutes == null || resource.slotMinutes <= 0) {
+                throw new BadRequestException("Configura una duracion de turno valida.");
+            }
+            if (isBlank(resource.openTime) || isBlank(resource.closeTime)) {
+                throw new BadRequestException("Configura horario de apertura y cierre.");
+            }
+            LocalTime open = TimeUtils.parseTime(resource.openTime);
+            LocalTime close = TimeUtils.parseTime(resource.closeTime);
+            if (!open.isBefore(close)) {
+                throw new BadRequestException("La hora de apertura debe ser anterior a la de cierre.");
+            }
+        }
+    }
+
     private boolean matchesUserSearch(UserDocument user, String search) {
         if (isBlank(search)) {
             return true;
@@ -410,8 +681,38 @@ public class AdminService {
                 || contains(incident.createdByEmail, normalized);
     }
 
+    private boolean matchesAuditSearch(AuditLogDocument log, String search) {
+        if (isBlank(search)) {
+            return true;
+        }
+        String normalized = search.toLowerCase(Locale.ROOT).trim();
+        return contains(log.logId, normalized)
+                || contains(log.actorUid, normalized)
+                || contains(log.actorName, normalized)
+                || contains(log.actorEmail, normalized)
+                || contains(log.action, normalized)
+                || contains(log.entityType, normalized)
+                || contains(log.entityId, normalized)
+                || contains(auditDescription(log), normalized);
+    }
+
     private boolean contains(String value, String normalizedSearch) {
         return safe(value).toLowerCase(Locale.ROOT).contains(normalizedSearch);
+    }
+
+    private AdminAuditLogResponse toAuditLogResponse(AuditLogDocument log) {
+        return new AdminAuditLogResponse(
+                log.logId,
+                log.createdAt,
+                log.actorUid,
+                blankToDefault(log.actorName, log.actorEmail),
+                log.actorEmail,
+                log.action,
+                log.entityType,
+                log.entityId,
+                auditDescription(log),
+                log.details == null ? Map.of() : log.details
+        );
     }
 
     private AdminUserResponse toUserResponse(UserDocument user) {
@@ -484,7 +785,10 @@ public class AdminService {
                 reservation.status,
                 reservation.createdAt,
                 reservation.updatedAt,
-                reservation.cancelledAt
+                reservation.cancelledAt,
+                reservation.cancelledByUid,
+                reservation.cancelledByName,
+                reservation.cancellationReason
         );
     }
 
@@ -563,6 +867,56 @@ public class AdminService {
             return user.email;
         }
         return user.uid;
+    }
+
+    private static String buildFullName(String firstName, String lastName) {
+        String value = (safe(firstName) + " " + safe(lastName)).trim();
+        return value.isBlank() ? null : value;
+    }
+
+    private static String normalizeNullable(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isBlank() ? null : normalized;
+    }
+
+    private static String normalizeRequired(String value, String message) {
+        String normalized = normalizeNullable(value);
+        if (normalized == null) {
+            throw new BadRequestException(message);
+        }
+        return normalized;
+    }
+
+    private static Map<String, Object> metadata(Object... pairs) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        for (int index = 0; index + 1 < pairs.length; index += 2) {
+            String key = String.valueOf(pairs[index]);
+            Object value = pairs[index + 1];
+            if (value != null) {
+                result.put(key, value);
+            }
+        }
+        return result;
+    }
+
+    private static String auditDescription(AuditLogDocument log) {
+        String entity = blankToDefault(log.entityType, "registro");
+        String entityId = blankToDefault(log.entityId, "");
+        return switch (safe(log.action)) {
+            case "ADMIN_USER_UPDATED" -> "Datos de usuario actualizados";
+            case "ADMIN_USER_ROLE_UPDATED" -> "Rol de usuario actualizado";
+            case "ADMIN_USER_STATUS_UPDATED" -> "Estado de usuario actualizado";
+            case "ADMIN_RESOURCE_UPDATED" -> "Configuracion de recurso actualizada";
+            case "ADMIN_RESOURCE_STATUS_UPDATED" -> "Estado de recurso actualizado";
+            case "ADMIN_RESERVATION_CANCELLED" -> "Reserva cancelada por administracion";
+            case "ADMIN_RESERVATION_STATUS_UPDATED" -> "Estado de reserva actualizado";
+            case "ADMIN_ANNOUNCEMENT_VISIBILITY_UPDATED" -> "Visibilidad de anuncio actualizada";
+            case "RESOURCE_RULES_UPDATED" -> "Reglas del recurso actualizadas";
+            default -> ("Accion administrativa sobre " + entity + " " + entityId).trim();
+        };
     }
 
     private static String blankToDefault(String value, String fallback) {

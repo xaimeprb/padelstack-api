@@ -20,6 +20,9 @@ public class ReservationDocument {
     public String createdAt;
     public String updatedAt;
     public String cancelledAt;
+    public String cancelledByUid;
+    public String cancelledByName;
+    public String cancellationReason;
 
     /**
      * Crea una instancia de ReservationDocument.

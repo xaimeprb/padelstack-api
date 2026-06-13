@@ -1,6 +1,7 @@
 package com.padelstack.api.controller;
 
 import com.padelstack.api.dto.AdminReservationResponse;
+import com.padelstack.api.dto.AdminReservationCancelRequest;
 import com.padelstack.api.dto.AdminReservationStatusUpdateRequest;
 import com.padelstack.api.model.UserDocument;
 import com.padelstack.api.service.AdminService;
@@ -56,5 +57,13 @@ public class AdminReservationController {
                                                  Authentication authentication) {
         UserDocument currentUser = securityService.currentUser(authentication);
         return adminService.updateReservationStatus(currentUser, reservationId, request);
+    }
+
+    @PatchMapping("/{reservationId}/cancel")
+    public AdminReservationResponse cancel(@PathVariable String reservationId,
+                                           @Valid @RequestBody AdminReservationCancelRequest request,
+                                           Authentication authentication) {
+        UserDocument currentUser = securityService.currentUser(authentication);
+        return adminService.cancelReservation(currentUser, reservationId, request);
     }
 }

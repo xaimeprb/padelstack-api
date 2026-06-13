@@ -2,6 +2,8 @@ package com.padelstack.api.controller;
 
 import com.padelstack.api.dto.AdminResourceRulesUpdateRequest;
 import com.padelstack.api.dto.AdminResourceResponse;
+import com.padelstack.api.dto.AdminResourceStatusUpdateRequest;
+import com.padelstack.api.dto.AdminResourceUpdateRequest;
 import com.padelstack.api.dto.ResourceResponse;
 import com.padelstack.api.model.UserDocument;
 import com.padelstack.api.service.AdminService;
@@ -53,6 +55,22 @@ public class AdminResourceController {
     public AdminResourceResponse one(@PathVariable String resourceId, Authentication authentication) {
         UserDocument currentUser = securityService.currentUser(authentication);
         return adminService.resource(currentUser, resourceId);
+    }
+
+    @PatchMapping("/{resourceId}")
+    public AdminResourceResponse update(@PathVariable String resourceId,
+                                        @Valid @RequestBody AdminResourceUpdateRequest request,
+                                        Authentication authentication) {
+        UserDocument currentUser = securityService.currentUser(authentication);
+        return adminService.updateResource(currentUser, resourceId, request);
+    }
+
+    @PatchMapping("/{resourceId}/status")
+    public AdminResourceResponse updateStatus(@PathVariable String resourceId,
+                                              @Valid @RequestBody AdminResourceStatusUpdateRequest request,
+                                              Authentication authentication) {
+        UserDocument currentUser = securityService.currentUser(authentication);
+        return adminService.updateResourceStatus(currentUser, resourceId, request);
     }
 
     /**

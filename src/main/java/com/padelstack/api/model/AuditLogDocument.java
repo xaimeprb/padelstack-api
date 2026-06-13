@@ -13,6 +13,7 @@ public class AuditLogDocument {
     public String entityId;
     public String communityId;
     public String actorUid;
+    public String actorName;
     public String actorEmail;
     public String createdAt;
     public Map<String, Object> details = new HashMap<>();

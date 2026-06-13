@@ -19,6 +19,9 @@ public record AdminReservationResponse(
         String status,
         String createdAt,
         String updatedAt,
-        String cancelledAt
+        String cancelledAt,
+        String cancelledByUid,
+        String cancelledByName,
+        String cancellationReason
 ) {
 }
