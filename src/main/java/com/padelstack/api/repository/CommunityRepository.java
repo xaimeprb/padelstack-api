@@ -1,6 +1,7 @@
 package com.padelstack.api.repository;
 
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.padelstack.api.model.CommunityDocument;
@@ -35,6 +36,24 @@ public class CommunityRepository extends BaseFirestoreRepository<CommunityDocume
     }
 
     /**
+     * Ajusta el identificador si el documento legacy no lo contiene.
+     *
+     * @param snapshot valor recibido por el metodo.
+     * @param entity valor recibido por el metodo.
+     * @return comunidad ajustada.
+     */
+    @Override
+    protected CommunityDocument afterRead(DocumentSnapshot snapshot, CommunityDocument entity) {
+        if (entity == null) {
+            return null;
+        }
+        if (entity.communityId == null || entity.communityId.isBlank()) {
+            entity.communityId = snapshot.getId();
+        }
+        return entity;
+    }
+
+    /**
      * Obtiene todos los documentos activos.
      *
      * @return lista de elementos obtenida.
@@ -44,7 +63,7 @@ public class CommunityRepository extends BaseFirestoreRepository<CommunityDocume
                 .whereEqualTo("active", true)
                 .get());
         return snapshot.getDocuments().stream()
-                .map(doc -> doc.toObject(CommunityDocument.class))
+                .map(doc -> afterRead(doc, doc.toObject(CommunityDocument.class)))
                 .toList();
     }
 
@@ -56,7 +75,7 @@ public class CommunityRepository extends BaseFirestoreRepository<CommunityDocume
     public List<CommunityDocument> findAll() {
         QuerySnapshot snapshot = FirestoreSupport.await(collection().get());
         return snapshot.getDocuments().stream()
-                .map(doc -> doc.toObject(CommunityDocument.class))
+                .map(doc -> afterRead(doc, doc.toObject(CommunityDocument.class)))
                 .toList();
     }
 

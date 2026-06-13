@@ -3,9 +3,12 @@ package com.padelstack.api.repository;
 import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.SetOptions;
 import com.padelstack.api.util.FirestoreSupport;
 
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -69,6 +72,19 @@ public abstract class BaseFirestoreRepository<T> {
         T entity = snapshot.toObject(targetType);
         entity = afterRead(snapshot, entity);
         return Optional.ofNullable(entity);
+    }
+
+    /**
+     * Obtiene todos los documentos de la coleccion.
+     *
+     * @return lista de documentos encontrados.
+     */
+    public List<T> findAll() {
+        QuerySnapshot snapshot = FirestoreSupport.await(collection().get());
+        return snapshot.getDocuments().stream()
+                .map(doc -> afterRead(doc, doc.toObject(targetType)))
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     /**

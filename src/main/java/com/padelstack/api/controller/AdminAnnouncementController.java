@@ -1,9 +1,11 @@
 package com.padelstack.api.controller;
 
+import com.padelstack.api.dto.AdminAnnouncementResponse;
 import com.padelstack.api.dto.AdminAnnouncementUpsertRequest;
 import com.padelstack.api.dto.AnnouncementResponse;
 import com.padelstack.api.dto.DeleteResponse;
 import com.padelstack.api.model.UserDocument;
+import com.padelstack.api.service.AdminService;
 import com.padelstack.api.service.AnnouncementService;
 import com.padelstack.api.service.SecurityService;
 import jakarta.validation.Valid;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/admin/announcements")
 public class AdminAnnouncementController {
 
+    private final AdminService adminService;
     private final AnnouncementService announcementService;
     private final SecurityService securityService;
 
@@ -26,9 +29,22 @@ public class AdminAnnouncementController {
      * @param announcementService servicio usado por la clase.
      * @param securityService servicio usado por la clase.
      */
-    public AdminAnnouncementController(AnnouncementService announcementService, SecurityService securityService) {
+    public AdminAnnouncementController(AdminService adminService,
+                                       AnnouncementService announcementService,
+                                       SecurityService securityService) {
+        this.adminService = adminService;
         this.announcementService = announcementService;
         this.securityService = securityService;
+    }
+
+    /**
+     * Lista anuncios para SUPERADMIN.
+     */
+    @GetMapping
+    public java.util.List<AdminAnnouncementResponse> all(@RequestParam(required = false) String communityId,
+                                                         Authentication authentication) {
+        UserDocument currentUser = securityService.currentUser(authentication);
+        return adminService.announcements(currentUser, communityId);
     }
 
     /**
@@ -42,6 +58,7 @@ public class AdminAnnouncementController {
     public AnnouncementResponse create(@Valid @RequestBody AdminAnnouncementUpsertRequest request,
                                        Authentication authentication) {
         UserDocument currentUser = securityService.currentUser(authentication);
+        securityService.requireSuperAdmin(currentUser);
         return announcementService.create(currentUser, request);
     }
 
@@ -58,6 +75,7 @@ public class AdminAnnouncementController {
                                        @Valid @RequestBody AdminAnnouncementUpsertRequest request,
                                        Authentication authentication) {
         UserDocument currentUser = securityService.currentUser(authentication);
+        securityService.requireSuperAdmin(currentUser);
         return announcementService.update(currentUser, announcementId, request);
     }
 
@@ -72,6 +90,7 @@ public class AdminAnnouncementController {
     public DeleteResponse delete(@PathVariable("id") String announcementId,
                                  Authentication authentication) {
         UserDocument currentUser = securityService.currentUser(authentication);
+        securityService.requireSuperAdmin(currentUser);
         announcementService.delete(currentUser, announcementId);
         return new DeleteResponse(true);
     }

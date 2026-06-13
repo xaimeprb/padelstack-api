@@ -71,7 +71,7 @@ public class SecurityService {
     public void requireSuperAdmin(UserDocument user) {
         Role role = roleOf(user);
         if (role != Role.SUPERADMIN) {
-            throw new ForbiddenException("No tienes permisos");
+            throw new ForbiddenException("No tienes permisos para acceder al panel de administracion.");
         }
     }
 
